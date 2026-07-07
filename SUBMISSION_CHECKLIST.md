@@ -4,6 +4,7 @@
 
 - [x] 两个 PDF 已解析并形成工程计划。
 - [x] 根目录包含仓库首页说明：`README.md`。
+- [x] 根目录包含 GitHub Actions CI：`.github/workflows/ci.yml`。
 - [x] 根目录包含 `task_plan.md`、`findings.md`、`progress.md`。
 - [x] 根目录包含工程项目管理总结：`PROJECT_MANAGEMENT_REPORT.md`。
 - [x] 根目录包含验收审计表：`ACCEPTANCE_AUDIT.md`。

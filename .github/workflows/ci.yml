@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install CIFAR dependencies
+        run: python -m pip install -r cifar10-resnet18-vibecoding/requirements.txt
+
+      - name: Install image quality dependencies
+        run: python -m pip install -r image-quality-report-vibecoding/requirements.txt
+
+      - name: Test remote push helper dry-run
+        shell: pwsh
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test_push_remote.ps1
+
+      - name: Test CIFAR project
+        working-directory: cifar10-resnet18-vibecoding
+        run: python -m unittest discover -s tests -v
+
+      - name: Compile CIFAR project
+        working-directory: cifar10-resnet18-vibecoding
+        run: python -m compileall src tests
+
+      - name: Test image quality project
+        working-directory: image-quality-report-vibecoding
+        shell: pwsh
+        run: |
+          $env:PYTHONPATH = "src"
+          python -m unittest discover -s tests -v
+
+      - name: Compile image quality project
+        working-directory: image-quality-report-vibecoding
+        run: python -m compileall src tests

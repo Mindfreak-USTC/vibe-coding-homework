@@ -6,6 +6,7 @@
 
 - `PROJECT_MANAGEMENT_REPORT.md`：项目管理总结，说明需求对齐、规划、分步执行、问题修正和验证证据。
 - `README.md`：仓库首页说明，适合远程仓库展示。
+- `.github/workflows/ci.yml`：推送到 GitHub 后运行的基础 CI 工作流。
 - `ACCEPTANCE_AUDIT.md`：按两个 PDF 要求逐项映射当前证据，并标明唯一外部阻塞项。
 - `SUBMISSION_CHECKLIST.md`：逐项对照两个 PDF 的交付清单。
 - `findings.md`：从两个 PDF 中提取出的需求。
@@ -13,6 +14,7 @@
 - `progress.md`：执行过程记录。
 - `REMOTE_PUSH_INSTRUCTIONS.md`：远程仓库推送说明。
 - `scripts/package_submission.ps1`：重新生成 `dist/` 源码包、Git bundle 和 SHA256 校验文件。
+- `scripts/test_ci_workflow.ps1`：检查 GitHub Actions 工作流结构。
 - `scripts/push_remote.ps1`：拿到远程仓库 URL 后的一键 remote 配置和 push 脚本。
 - `scripts/verify_submission.ps1`：一键本地验收脚本，复验测试、语法检查、bundle 和源码包内容。
 

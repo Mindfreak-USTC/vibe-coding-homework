@@ -62,12 +62,14 @@ Write-Host "Root: $Root"
 Write-Host "Python: $Python"
 
 $requiredFiles = @(
+    ".github\workflows\ci.yml",
     "README.md",
     "TEACHER_HANDOFF.md",
     "ACCEPTANCE_AUDIT.md",
     "PROJECT_MANAGEMENT_REPORT.md",
     "SUBMISSION_CHECKLIST.md",
     "scripts\package_submission.ps1",
+    "scripts\test_ci_workflow.ps1",
     "scripts\test_package_submission.ps1",
     "scripts\push_remote.ps1",
     "scripts\test_push_remote.ps1",
@@ -89,6 +91,12 @@ foreach ($relativePath in $requiredFiles) {
 }
 
 if (-not $SkipTests) {
+    Invoke-Native `
+        -Name "GitHub Actions workflow structure" `
+        -WorkingDirectory $Root `
+        -Exe "powershell" `
+        -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts\test_ci_workflow.ps1")
+
     Invoke-Native `
         -Name "Package helper dry-run" `
         -WorkingDirectory $Root `
@@ -141,12 +149,14 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $requiredZipEntries = @(
+    ".github/workflows/ci.yml",
     "README.md",
     "TEACHER_HANDOFF.md",
     "ACCEPTANCE_AUDIT.md",
     "PROJECT_MANAGEMENT_REPORT.md",
     "SUBMISSION_CHECKLIST.md",
     "scripts/package_submission.ps1",
+    "scripts/test_ci_workflow.ps1",
     "scripts/test_package_submission.ps1",
     "scripts/push_remote.ps1",
     "scripts/test_push_remote.ps1",

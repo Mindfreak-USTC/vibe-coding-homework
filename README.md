@@ -25,6 +25,10 @@ powershell -ExecutionPolicy Bypass -File scripts/verify_submission.ps1 -Python <
 
 该脚本会检查两个项目的单元测试、语法编译、Git bundle、源码 zip 内容和 SHA256 校验。当前没有远程仓库时，脚本会给出 warning；如果要把远程仓库缺失作为失败条件，追加 `-RequireRemote`。
 
+## 远程 CI
+
+仓库包含 GitHub Actions 工作流：`.github/workflows/ci.yml`。推送到 GitHub 后，CI 会安装两个项目的依赖，运行远程推送脚本 dry-run、两个项目的单元测试和 `compileall`。
+
 ## 刷新离线交付包
 
 如果后续又有本地提交，可以用脚本重建 `dist/`：
