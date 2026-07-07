@@ -12,6 +12,7 @@
 - `task_plan.md`：执行计划和任务拆分。
 - `progress.md`：执行过程记录。
 - `REMOTE_PUSH_INSTRUCTIONS.md`：远程仓库推送说明。
+- `scripts/push_remote.ps1`：拿到远程仓库 URL 后的一键 remote 配置和 push 脚本。
 - `scripts/verify_submission.ps1`：一键本地验收脚本，复验测试、语法检查、bundle 和源码包内容。
 
 ## 2. 两个任务目录
@@ -89,6 +90,12 @@ git push -u origin master
 ```
 
 如果暂时无法提供远程仓库，`dist/` 中的源码包和 Git bundle 可以作为离线提交材料。
+
+拿到远程仓库 URL 后，也可以运行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/push_remote.ps1 -RemoteUrl <你的远程仓库URL> -Python <python-path>
+```
 
 ## 7. 一键本地验收
 

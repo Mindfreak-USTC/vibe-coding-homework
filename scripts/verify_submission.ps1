@@ -67,6 +67,8 @@ $requiredFiles = @(
     "ACCEPTANCE_AUDIT.md",
     "PROJECT_MANAGEMENT_REPORT.md",
     "SUBMISSION_CHECKLIST.md",
+    "scripts\push_remote.ps1",
+    "scripts\test_push_remote.ps1",
     "scripts\verify_submission.ps1",
     "cifar10-resnet18-vibecoding\outputs\report.md",
     "cifar10-resnet18-vibecoding\outputs\test_metrics.json",
@@ -85,6 +87,12 @@ foreach ($relativePath in $requiredFiles) {
 }
 
 if (-not $SkipTests) {
+    Invoke-Native `
+        -Name "Remote push helper dry-run" `
+        -WorkingDirectory $Root `
+        -Exe "powershell" `
+        -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts\test_push_remote.ps1")
+
     Invoke-Native `
         -Name "CIFAR unittest" `
         -WorkingDirectory (Join-Path $Root "cifar10-resnet18-vibecoding") `
@@ -130,6 +138,8 @@ $requiredZipEntries = @(
     "ACCEPTANCE_AUDIT.md",
     "PROJECT_MANAGEMENT_REPORT.md",
     "SUBMISSION_CHECKLIST.md",
+    "scripts/push_remote.ps1",
+    "scripts/test_push_remote.ps1",
     "scripts/verify_submission.ps1",
     "cifar10-resnet18-vibecoding/outputs/training_curves.png",
     "image-quality-report-vibecoding/outputs/quality_results.csv"

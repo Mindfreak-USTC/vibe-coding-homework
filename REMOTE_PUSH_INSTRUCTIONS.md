@@ -8,6 +8,20 @@
 
 ## 获取远程仓库 URL 后执行
 
+推荐使用脚本：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/push_remote.ps1 -RemoteUrl <你的远程仓库URL> -Python <python-path>
+```
+
+先预览命令、不修改 remote：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/push_remote.ps1 -RemoteUrl <你的远程仓库URL> -DryRun
+```
+
+也可以手动执行：
+
 ```powershell
 git remote add origin <你的远程仓库URL>
 git push -u origin master

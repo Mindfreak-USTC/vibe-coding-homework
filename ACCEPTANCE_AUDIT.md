@@ -18,6 +18,7 @@
 | 提供仓库首页 README | `README.md` | 已满足 |
 | 提供老师/助教检查入口 | `TEACHER_HANDOFF.md` | 已满足 |
 | 提供一键本地验收脚本 | `scripts/verify_submission.ps1` | 已满足 |
+| 提供远程推送辅助脚本 | `scripts/push_remote.ps1`、`scripts/test_push_remote.ps1` | 已满足 |
 | 提供可离线提交的打包产物 | `dist/vibe-coding-homework-source.zip`、`dist/vibe-coding-homework-history.bundle`、`dist/SHA256SUMS.txt` | 已满足 |
 
 ## 2. CIFAR-10 ResNet-18 任务
