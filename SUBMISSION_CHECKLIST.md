@@ -4,6 +4,7 @@
 
 - [x] 两个 PDF 已解析并形成工程计划。
 - [x] 根目录包含 `task_plan.md`、`findings.md`、`progress.md`。
+- [x] 根目录包含工程项目管理总结：`PROJECT_MANAGEMENT_REPORT.md`。
 - [x] 两个任务拆分为独立项目目录。
 - [x] 每个项目都有 README、requirements、源码、测试和 vibe coding 过程记录。
 
