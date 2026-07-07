@@ -59,6 +59,7 @@ python src/test.py --config configs/default.yaml --checkpoint checkpoints/best_m
 - `checkpoints/best_model.pth`（本地验证产物，按 `.gitignore` 不提交）
 - `logs/events.out.tfevents.*`（本地验证产物，按 `.gitignore` 不提交）
 - `outputs/history.json`
+- `outputs/training_curves.png`
 - `outputs/test_metrics.json`
 - `outputs/confusion_matrix.png`
 - `outputs/report.md`

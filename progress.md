@@ -87,6 +87,7 @@
 | GitCode CIFAR preparation | `powershell -ExecutionPolicy Bypass -File scripts/prepare_gitcode_cifar.ps1 -Python <bundled-python>` | Extract dataset and verify loader | CIFAR-10 train images: 50000 | pass |
 | CIFAR real quick train | `python src/train.py --config configs/default.yaml --quick-dev-run` | Train one epoch on small real CIFAR subset | Passed; val acc 0.1471 | pass |
 | CIFAR real quick test | `python src/test.py --config configs/default.yaml --checkpoint checkpoints/best_model.pth --quick-dev-run` | Test on small real CIFAR subset | Passed; test acc 0.1992 on 256 samples | pass |
+| CIFAR training curves | `outputs/training_curves.png` | Static train/val loss and accuracy curves | Generated and visually inspected | pass |
 | CIFAR offline train smoke | `python src/train.py --config configs/default.yaml --offline-smoke` | One epoch, checkpoint, TensorBoard, history | Passed; best val acc 0.1562 | pass |
 | CIFAR offline test smoke | `python src/test.py --config configs/default.yaml --checkpoint checkpoints/best_model.pth --offline-smoke` | Metrics, report, confusion matrix | Passed; test acc 0.1562 | pass |
 | Git history | `git log --oneline` | At least 5 meaningful commits | 6 commits before final packaging commit | pass |

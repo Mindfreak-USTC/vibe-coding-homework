@@ -34,6 +34,7 @@
 | TensorBoard 日志 | `cifar10-resnet18-vibecoding/src/logger.py` 和 `logs/README.md` |
 | 保存模型权重 | `checkpoints/README.md`；本地验证生成 `.pth`，但按要求不提交大文件 |
 | 测试准确率和每类准确率 | `cifar10-resnet18-vibecoding/outputs/test_metrics.json` |
+| 训练/验证 loss 和 accuracy 曲线 | `cifar10-resnet18-vibecoding/outputs/training_curves.png` |
 | 混淆矩阵 | `cifar10-resnet18-vibecoding/outputs/confusion_matrix.png` |
 | 实验报告 | `cifar10-resnet18-vibecoding/outputs/report.md` |
 | vibe coding 过程记录 | `cifar10-resnet18-vibecoding/docs/vibe_coding_process.md` |
@@ -134,6 +135,7 @@ python -m compileall src tests
 - CIFAR-10 训练集读取数量：50,000。
 - quick-dev 训练通过：最终验证准确率 0.1471。
 - quick-dev 测试通过：测试准确率 0.1992，样本数 256。
+- 生成训练曲线：`outputs/training_curves.png`。
 - 4 个轻量测试通过。
 - 语法检查通过。
 
@@ -161,4 +163,3 @@ python -m compileall src tests
 git remote add origin <你的远程仓库URL>
 git push -u origin master
 ```
-

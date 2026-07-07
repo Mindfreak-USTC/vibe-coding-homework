@@ -59,6 +59,7 @@ logging:
             history_path = root / "history.json"
             metrics_path = root / "test_metrics.json"
             report_path = root / "report.md"
+            curves_path = root / "training_curves.png"
 
             history_path.write_text(
                 json.dumps(
@@ -87,8 +88,10 @@ logging:
 
         self.assertIn("测试集整体准确率", report)
         self.assertIn("0.3200", report)
+        self.assertIn("training_curves.png", report)
         self.assertIn("是否出现明显过拟合", report)
         self.assertIn("后续改进方向", report)
+        self.assertTrue(curves_path.exists())
 
     def test_confusion_matrix_uses_project_local_matplotlib_cache(self):
         from visualization import save_confusion_matrix

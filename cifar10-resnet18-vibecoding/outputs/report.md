@@ -11,6 +11,9 @@
 - 最终验证 loss: 2.2576
 - 最终验证 accuracy: 0.1471
 
+## 训练曲线
+![training curves](training_curves.png)
+
 ## 测试结果
 - 测试集整体准确率: 0.1992
 - 混淆矩阵: C:\Users\28751\Desktop\ju\cifar10-resnet18-vibecoding\outputs\confusion_matrix.png
