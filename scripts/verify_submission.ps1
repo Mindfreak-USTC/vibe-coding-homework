@@ -67,6 +67,8 @@ $requiredFiles = @(
     "ACCEPTANCE_AUDIT.md",
     "PROJECT_MANAGEMENT_REPORT.md",
     "SUBMISSION_CHECKLIST.md",
+    "scripts\package_submission.ps1",
+    "scripts\test_package_submission.ps1",
     "scripts\push_remote.ps1",
     "scripts\test_push_remote.ps1",
     "scripts\verify_submission.ps1",
@@ -87,6 +89,12 @@ foreach ($relativePath in $requiredFiles) {
 }
 
 if (-not $SkipTests) {
+    Invoke-Native `
+        -Name "Package helper dry-run" `
+        -WorkingDirectory $Root `
+        -Exe "powershell" `
+        -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts\test_package_submission.ps1")
+
     Invoke-Native `
         -Name "Remote push helper dry-run" `
         -WorkingDirectory $Root `
@@ -138,6 +146,8 @@ $requiredZipEntries = @(
     "ACCEPTANCE_AUDIT.md",
     "PROJECT_MANAGEMENT_REPORT.md",
     "SUBMISSION_CHECKLIST.md",
+    "scripts/package_submission.ps1",
+    "scripts/test_package_submission.ps1",
     "scripts/push_remote.ps1",
     "scripts/test_push_remote.ps1",
     "scripts/verify_submission.ps1",

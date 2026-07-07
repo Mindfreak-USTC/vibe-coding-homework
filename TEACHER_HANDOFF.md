@@ -12,6 +12,7 @@
 - `task_plan.md`：执行计划和任务拆分。
 - `progress.md`：执行过程记录。
 - `REMOTE_PUSH_INSTRUCTIONS.md`：远程仓库推送说明。
+- `scripts/package_submission.ps1`：重新生成 `dist/` 源码包、Git bundle 和 SHA256 校验文件。
 - `scripts/push_remote.ps1`：拿到远程仓库 URL 后的一键 remote 配置和 push 脚本。
 - `scripts/verify_submission.ps1`：一键本地验收脚本，复验测试、语法检查、bundle 和源码包内容。
 
@@ -106,3 +107,11 @@ powershell -ExecutionPolicy Bypass -File scripts/verify_submission.ps1 -Python <
 ```
 
 如果要把“远程仓库必须已配置”也纳入失败条件，追加 `-RequireRemote`。
+
+## 8. 刷新离线交付包
+
+如果后续又产生新提交，在根目录运行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/package_submission.ps1 -Python <python-path>
+```

@@ -25,6 +25,16 @@ powershell -ExecutionPolicy Bypass -File scripts/verify_submission.ps1 -Python <
 
 该脚本会检查两个项目的单元测试、语法编译、Git bundle、源码 zip 内容和 SHA256 校验。当前没有远程仓库时，脚本会给出 warning；如果要把远程仓库缺失作为失败条件，追加 `-RequireRemote`。
 
+## 刷新离线交付包
+
+如果后续又有本地提交，可以用脚本重建 `dist/`：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/package_submission.ps1 -Python <python-path>
+```
+
+想先预览命令、不改动 `dist/`，追加 `-DryRun`。
+
 ## 远程推送
 
 拿到空仓库 URL 后，可以用脚本完成 remote 配置、push 和远程条件验收：

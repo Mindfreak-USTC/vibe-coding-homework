@@ -8,6 +8,7 @@
 - [x] 根目录包含工程项目管理总结：`PROJECT_MANAGEMENT_REPORT.md`。
 - [x] 根目录包含验收审计表：`ACCEPTANCE_AUDIT.md`。
 - [x] 根目录包含一键本地验收脚本：`scripts/verify_submission.ps1`。
+- [x] 根目录包含离线交付包重建脚本：`scripts/package_submission.ps1`。
 - [x] 根目录包含远程推送辅助脚本：`scripts/push_remote.ps1`。
 - [x] 两个任务拆分为独立项目目录。
 - [x] 每个项目都有 README、requirements、源码、测试和 vibe coding 过程记录。
