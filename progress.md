@@ -3,28 +3,68 @@
 ## Session: 2026-07-07
 
 ### Phase 1: Requirements Discovery
-- **Status:** in_progress
+- **Status:** complete
 - **Started:** 2026-07-07
 - Actions taken:
   - Confirmed an existing active Codex goal already matches the user request.
-  - Located two PDF files in the workspace.
+  - Located the two assignment PDFs in the workspace.
   - Created project planning files for multi-session execution.
-  - Confirmed bundled PDF Python libraries are available.
   - Rendered both PDFs to PNG under `tmp/pdfs/`.
   - Extracted PDF text to `tmp/pdfs/cifar10.txt` and `tmp/pdfs/image_quality.txt`.
-  - Visually checked representative rendered pages for titles, requirements, submission lists, scoring, and acceptance criteria.
+  - Visually checked representative rendered pages for requirements, submission lists, scoring, and acceptance criteria.
   - Updated `findings.md` with task requirements and technical decisions.
 - Files created/modified:
-  - `task_plan.md` created
-  - `findings.md` created
-  - `progress.md` created
+  - `task_plan.md`
+  - `findings.md`
+  - `progress.md`
 
 ### Phase 2: Project Planning
-- **Status:** pending
+- **Status:** complete
 - Actions taken:
-  - None yet
+  - Created `docs/superpowers/plans/2026-07-07-vibe-coding-homework.md`.
+  - Split work into `cifar10-resnet18-vibecoding/` and `image-quality-report-vibecoding/`.
+  - Chose TensorBoard for CIFAR logging and Pillow/NumPy/Pandas-light stack for image quality.
 - Files created/modified:
-  - None yet
+  - `docs/superpowers/plans/2026-07-07-vibe-coding-homework.md`
+
+### Phase 3: Implementation
+- **Status:** complete
+- Actions taken:
+  - Added image-quality tests, implementation, README, requirements, process record, sample images, CSV, charts, and report.
+  - Added CIFAR tests, config, training/evaluation/test modules, TensorBoard logging, checkpointing, confusion matrix generation, report generation, scripts, README, requirements, and process record.
+  - Added `--offline-smoke` mode after real CIFAR download timed out.
+- Files created/modified:
+  - `image-quality-report-vibecoding/`
+  - `cifar10-resnet18-vibecoding/`
+  - `SUBMISSION_CHECKLIST.md`
+
+### Phase 4: Testing and Verification
+- **Status:** complete
+- Actions taken:
+  - Ran image-quality unit tests successfully.
+  - Ran image-quality CLI on sample images successfully.
+  - Visually inspected generated image-quality charts.
+  - Installed CIFAR deep-learning dependencies after approval.
+  - Real CIFAR download timed out before training completed.
+  - Ran CIFAR offline smoke train/test successfully.
+  - Visually inspected CIFAR confusion matrix.
+  - Created local Git repo and made at least 6 meaningful commits before final packaging commit.
+- Files created/modified:
+  - `image-quality-report-vibecoding/outputs/`
+  - `cifar10-resnet18-vibecoding/outputs/`
+  - `.git/`
+
+### Phase 5: Final Packaging
+- **Status:** in_progress
+- Actions taken:
+  - Added root `.gitignore`.
+  - Added `SUBMISSION_CHECKLIST.md`.
+  - Updated planning and progress files with verification results.
+- Files created/modified:
+  - `.gitignore`
+  - `SUBMISSION_CHECKLIST.md`
+  - `task_plan.md`
+  - `progress.md`
 
 ## Test Results
 | Test | Input | Expected | Actual | Status |
@@ -32,6 +72,14 @@
 | Workspace file discovery | `rg --files` | Two assignment PDFs visible | Two assignment PDFs found | pass |
 | PDF text extraction | bundled Python + pdfplumber | Extract text from both PDFs | CIFAR-10: 9 pages, image-quality: 2 pages | pass |
 | PDF rendering | Poppler `pdftoppm.exe` | PNG pages for both PDFs | 11 PNG files generated | pass |
+| Image-quality unit tests | `python -m unittest discover -s tests -v` | 4 tests pass | 4 tests passed | pass |
+| Image-quality CLI | `python -m image_quality.cli --input sample_images --output outputs` | CSV, report, charts | 9 files processed, outputs generated | pass |
+| CIFAR light tests | `python -m unittest discover -s tests -v` | 3 tests pass | 3 tests passed | pass |
+| CIFAR syntax check | `python -m compileall src tests` | No syntax errors | Passed | pass |
+| CIFAR real quick run | `python src/train.py --config configs/default.yaml --quick-dev-run` | Download CIFAR and train one epoch | Timed out during CIFAR download | blocked |
+| CIFAR offline train smoke | `python src/train.py --config configs/default.yaml --offline-smoke` | One epoch, checkpoint, TensorBoard, history | Passed; best val acc 0.1562 | pass |
+| CIFAR offline test smoke | `python src/test.py --config configs/default.yaml --checkpoint checkpoints/best_model.pth --offline-smoke` | Metrics, report, confusion matrix | Passed; test acc 0.1562 | pass |
+| Git history | `git log --oneline` | At least 5 meaningful commits | 6 commits before final packaging commit | pass |
 
 ## Error Log
 | Timestamp | Error | Attempt | Resolution |
@@ -39,12 +87,17 @@
 | 2026-07-07 | Existing active Codex goal prevented duplicate goal creation | 1 | Continued with current active goal |
 | 2026-07-07 | Default `python` resolved to Windows Store alias | 1 | Used Codex bundled Python executable |
 | 2026-07-07 | `pdftoppm` wrapper reported path not found | 1 | Called underlying Poppler `pdftoppm.exe` with absolute paths |
+| 2026-07-07 | `pytest` not installed | 1 | Converted tests to standard-library `unittest` |
+| 2026-07-07 | Test temp dirs under system/AppData paths hit PermissionError | 1 | Moved test work dirs into project-local `test_runs/` |
+| 2026-07-07 | CIFAR real data download timed out | 1 | Added `--offline-smoke` FakeData mode and documented real-data follow-up |
+| 2026-07-07 | Matplotlib tried to write AppData cache | 1 | Set project-local `MPLCONFIGDIR` before importing Matplotlib |
+| 2026-07-07 | Git metadata writes were sandbox-blocked | 1 | Used approved escalated Git commands |
 
 ## 5-Question Reboot Check
 | Question | Answer |
 |----------|--------|
-| Where am I? | Completing Phase 1: Requirements Discovery |
-| Where am I going? | Plan two project folders, implement, verify, package |
+| Where am I? | Phase 5: Final Packaging |
+| Where am I going? | Deliver local artifacts and note external follow-ups |
 | What's the goal? | Complete both homework tasks as managed vibe-coding engineering deliverables |
-| What have I learned? | Task 1 is a CIFAR-10 ResNet-18 training project; task 2 is an image-quality detection and auto-report project |
-| What have I done? | Created planning files, rendered/extracted PDFs, and captured requirements |
+| What have I learned? | Image-quality project is fully locally verified; CIFAR engineering pipeline is verified with offline FakeData while real CIFAR download is network-blocked |
+| What have I done? | Built both projects, generated docs/outputs, ran tests/smokes, and created Git commits |

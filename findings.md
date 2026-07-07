@@ -20,6 +20,9 @@
 - `Vibe Coding CIFAR-10 Image Classification.pdf` has 9 pages. Text extraction and visual page checks confirm the main requirements, submission list, scoring table, and acceptance criteria.
 - `图像质量检测与自动报告系统.pdf` has 2 pages. Text extraction and visual page checks confirm the functional list, constraints, submission list, and acceptance criteria.
 - PDF-rendered images are stored under `tmp/pdfs/` for inspection.
+- CIFAR real-data quick run timed out while downloading CIFAR-10 in this environment. The project keeps the real CIFAR command unchanged and adds explicit `--offline-smoke` mode for local engineering-chain verification.
+- CIFAR offline smoke train/test passed and generated checkpoint, TensorBoard event file, history JSON, test metrics JSON, confusion matrix PNG, and report markdown.
+- Image-quality CLI passed on generated sample images and produced CSV, Markdown report, and three charts.
 
 ## Technical Decisions
 | Decision | Rationale |
@@ -28,12 +31,15 @@
 | Implement two separate project folders | The two PDFs describe independent systems with different dependencies, commands, and deliverables. |
 | Prefer TensorBoard over W&B for the CIFAR-10 project | It avoids API-key handling and satisfies the logging requirement locally. |
 | Include synthetic/sample data paths for smoke tests | Full CIFAR-10 training and image-quality analysis should be reproducible, but smoke checks must run quickly on CPU. |
+| Mark CIFAR smoke metrics as FakeData | Offline smoke results must not be misrepresented as real CIFAR-10 accuracy. |
 
 ## Issues Encountered
 | Issue | Resolution |
 |-------|------------|
 | Default `python` points to Windows Store alias | Used Codex bundled Python at `C:\Users\28751\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe`. |
 | `pdftoppm` wrapper failed with relative paths | Used the underlying Poppler executable with absolute PDF and output paths. |
+| Real CIFAR download timed out | Added `--offline-smoke` using TorchVision FakeData and documented that real CIFAR metrics require rerunning after data download succeeds. |
+| Matplotlib cache attempted to write AppData | Set project-local `MPLCONFIGDIR` before importing Matplotlib. |
 
 ## Resources
 - `Vibe Coding CIFAR-10 Image Classification.pdf`
