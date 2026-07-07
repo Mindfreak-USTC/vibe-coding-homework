@@ -1,0 +1,28 @@
+seed: 42
+device: auto
+dataset:
+  name: CIFAR10
+  data_dir: ./data
+  download: true
+  source_url: https://gitcode.com/open-source-toolkit/94ecd/blob/main/cifar-10-python.tar.gz
+  batch_size: 128
+  num_workers: 2
+  val_ratio: 0.1
+model:
+  name: resnet18
+  num_classes: 10
+  pretrained: false
+training:
+  epochs: 10
+  learning_rate: 0.001
+  optimizer: adam
+  weight_decay: 0.0005
+logging:
+  backend: tensorboard
+  log_dir: ./logs
+checkpoint:
+  save_dir: ./checkpoints
+  save_best: true
+outputs:
+  dir: ./outputs
+
