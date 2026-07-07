@@ -23,7 +23,7 @@ function Invoke-Native {
         [string]$Name,
         [string]$WorkingDirectory,
         [string]$Exe,
-        [string[]]$Args,
+        [string[]]$ArgumentList,
         [hashtable]$Env = @{}
     )
 
@@ -38,7 +38,7 @@ function Invoke-Native {
 
     Push-Location $WorkingDirectory
     try {
-        & $Exe @Args
+        & $Exe @ArgumentList
         if ($LASTEXITCODE -ne 0) {
             throw "$Name failed with exit code $LASTEXITCODE"
         }
@@ -88,33 +88,33 @@ if (-not $SkipTests) {
         -Name "CIFAR unittest" `
         -WorkingDirectory (Join-Path $Root "cifar10-resnet18-vibecoding") `
         -Exe $Python `
-        -Args @("-m", "unittest", "discover", "-s", "tests", "-v")
+        -ArgumentList @("-m", "unittest", "discover", "-s", "tests", "-v")
 
     Invoke-Native `
         -Name "CIFAR compileall" `
         -WorkingDirectory (Join-Path $Root "cifar10-resnet18-vibecoding") `
         -Exe $Python `
-        -Args @("-m", "compileall", "src", "tests")
+        -ArgumentList @("-m", "compileall", "src", "tests")
 
     Invoke-Native `
         -Name "Image quality unittest" `
         -WorkingDirectory (Join-Path $Root "image-quality-report-vibecoding") `
         -Exe $Python `
-        -Args @("-m", "unittest", "discover", "-s", "tests", "-v") `
+        -ArgumentList @("-m", "unittest", "discover", "-s", "tests", "-v") `
         -Env @{ "PYTHONPATH" = "src" }
 
     Invoke-Native `
         -Name "Image quality compileall" `
         -WorkingDirectory (Join-Path $Root "image-quality-report-vibecoding") `
         -Exe $Python `
-        -Args @("-m", "compileall", "src", "tests")
+        -ArgumentList @("-m", "compileall", "src", "tests")
 }
 
 Invoke-Native `
     -Name "Git bundle verify" `
     -WorkingDirectory $Root `
     -Exe "git" `
-    -Args @("bundle", "verify", "dist\vibe-coding-homework-history.bundle")
+    -ArgumentList @("bundle", "verify", "dist\vibe-coding-homework-history.bundle")
 
 Write-Host ""
 Write-Host "== Source zip content check"
