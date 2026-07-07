@@ -1,0 +1,10 @@
+﻿filename,path,status,width,height,megapixels,brightness,contrast,sharpness,noise,issues,error
+blurry.bmp,sample_images\blurry.bmp,ok,128,128,0.0164,127.5,0.7822,12.5437,0.5055,blurry;low_contrast,
+corrupt.png,sample_images\corrupt.png,error,,,,,,,,,cannot identify image file 'sample_images\\corrupt.png'
+high_noise.png,sample_images\high_noise.png,ok,128,128,0.0164,127.6201,29.9882,18133.0762,28.2787,high_noise,
+low_resolution.png,sample_images\low_resolution.png,ok,24,24,0.0006,120.0,0.0,0.0,0.0,blurry;low_contrast;low_resolution,
+normal.png,sample_images\normal.png,ok,128,128,0.0164,130.0,0.0,0.0,0.0,blurry;low_contrast,
+notes.txt,sample_images\notes.txt,skipped,,,,,,,,,unsupported file type
+overexposed.jpg,sample_images\overexposed.jpg,ok,96,96,0.0092,245.0,0.0,0.0,0.0,overexposed;blurry;low_contrast,
+too_dark.png,sample_images\too_dark.png,ok,96,96,0.0092,12.0,0.0,0.0,0.0,too_dark;blurry;low_contrast,
+中文文件名.png,sample_images\中文文件名.png,ok,96,96,0.0092,100.0,0.0,0.0,0.0,blurry;low_contrast,
