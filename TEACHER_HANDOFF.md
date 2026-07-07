@@ -5,6 +5,7 @@
 ## 1. 先看哪些文件
 
 - `PROJECT_MANAGEMENT_REPORT.md`：项目管理总结，说明需求对齐、规划、分步执行、问题修正和验证证据。
+- `README.md`：仓库首页说明，适合远程仓库展示。
 - `ACCEPTANCE_AUDIT.md`：按两个 PDF 要求逐项映射当前证据，并标明唯一外部阻塞项。
 - `SUBMISSION_CHECKLIST.md`：逐项对照两个 PDF 的交付清单。
 - `findings.md`：从两个 PDF 中提取出的需求。

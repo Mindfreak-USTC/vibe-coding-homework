@@ -15,6 +15,7 @@
 | 以工程项目方式管理任务 | `findings.md`、`task_plan.md`、`progress.md`、`PROJECT_MANAGEMENT_REPORT.md` | 已满足 |
 | 做需求对齐、规划大纲、分步执行、需求回顾 | `PROJECT_MANAGEMENT_REPORT.md` 第 2-6 节，`SUBMISSION_CHECKLIST.md` | 已满足 |
 | 体现 vibe coding：用自然语言描述需求、反馈错误、迭代完善 | 两个项目的 `docs/vibe_coding_process.md` | 已满足 |
+| 提供仓库首页 README | `README.md` | 已满足 |
 | 提供老师/助教检查入口 | `TEACHER_HANDOFF.md` | 已满足 |
 | 提供一键本地验收脚本 | `scripts/verify_submission.ps1` | 已满足 |
 | 提供可离线提交的打包产物 | `dist/vibe-coding-homework-source.zip`、`dist/vibe-coding-homework-history.bundle`、`dist/SHA256SUMS.txt` | 已满足 |

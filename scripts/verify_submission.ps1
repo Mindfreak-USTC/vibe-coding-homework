@@ -62,6 +62,7 @@ Write-Host "Root: $Root"
 Write-Host "Python: $Python"
 
 $requiredFiles = @(
+    "README.md",
     "TEACHER_HANDOFF.md",
     "ACCEPTANCE_AUDIT.md",
     "PROJECT_MANAGEMENT_REPORT.md",
@@ -124,6 +125,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $requiredZipEntries = @(
+    "README.md",
     "TEACHER_HANDOFF.md",
     "ACCEPTANCE_AUDIT.md",
     "PROJECT_MANAGEMENT_REPORT.md",
