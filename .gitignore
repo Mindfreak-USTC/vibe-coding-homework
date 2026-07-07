@@ -1,0 +1,10 @@
+tmp/
+.agents/
+.codex/
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.tmp_tests/
+**/test_runs/
+**/.matplotlib/
+python_write_test.txt
