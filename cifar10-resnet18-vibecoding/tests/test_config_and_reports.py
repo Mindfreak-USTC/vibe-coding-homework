@@ -104,6 +104,19 @@ logging:
             if old_cache is not None:
                 os.environ["MPLCONFIGDIR"] = old_cache
 
+    def test_test_script_quick_dev_overrides_disable_multiprocessing(self):
+        import argparse
+        import test as test_script
+
+        config = {"dataset": {"batch_size": 128, "num_workers": 2}}
+        args = argparse.Namespace(quick_dev_run=True, num_workers=None, batch_size=None)
+
+        updated = test_script.apply_overrides(config, args)
+
+        self.assertEqual(updated["dataset"]["num_workers"], 0)
+        self.assertEqual(updated["dataset"]["batch_size"], 64)
+        self.assertEqual(updated["dataset"]["test_subset_limit"], 256)
+
 
 if __name__ == "__main__":
     unittest.main()

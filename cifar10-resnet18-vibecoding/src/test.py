@@ -16,8 +16,35 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Evaluate a trained CIFAR-10 checkpoint.")
     parser.add_argument("--config", default="configs/default.yaml", type=Path)
     parser.add_argument("--checkpoint", required=True, type=Path)
+    parser.add_argument("--quick-dev-run", action="store_true", help="Use a small test subset and single-process loading.")
     parser.add_argument("--offline-smoke", action="store_true", help="Use TorchVision FakeData for pipeline verification.")
+    parser.add_argument("--num-workers", type=int, help="Override DataLoader num_workers.")
+    parser.add_argument("--batch-size", type=int, help="Override batch size.")
     return parser
+
+
+def apply_overrides(config: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:
+    dataset_cfg = config.setdefault("dataset", {})
+    batch_size = getattr(args, "batch_size", None)
+    num_workers = getattr(args, "num_workers", None)
+    quick_dev_run = bool(getattr(args, "quick_dev_run", False))
+    offline_smoke = bool(getattr(args, "offline_smoke", False))
+    if batch_size is not None:
+        dataset_cfg["batch_size"] = batch_size
+    if num_workers is not None:
+        dataset_cfg["num_workers"] = num_workers
+    if quick_dev_run:
+        dataset_cfg["test_subset_limit"] = 256
+        if batch_size is None:
+            dataset_cfg["batch_size"] = 64
+        dataset_cfg["num_workers"] = 0
+    if offline_smoke:
+        dataset_cfg["fake_data"] = True
+        dataset_cfg["fake_test_size"] = 32
+        if batch_size is None:
+            dataset_cfg["batch_size"] = 32
+        dataset_cfg["num_workers"] = 0
+    return config
 
 
 def _load_checkpoint(model, checkpoint_path: Path, device: str) -> dict[str, Any]:
@@ -36,12 +63,7 @@ def main() -> int:
     import torch.nn as nn
 
     args = build_parser().parse_args()
-    config = load_config(args.config)
-    if args.offline_smoke:
-        config.setdefault("dataset", {})["fake_data"] = True
-        config.setdefault("dataset", {})["fake_test_size"] = 32
-        config.setdefault("dataset", {})["batch_size"] = 32
-        config.setdefault("dataset", {})["num_workers"] = 0
+    config = apply_overrides(load_config(args.config), args)
     set_seed(int(config.get("seed", 42)))
     device = resolve_device(str(config.get("device", "auto")))
 

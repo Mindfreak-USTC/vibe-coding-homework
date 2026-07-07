@@ -30,7 +30,9 @@
 - [x] 轻量测试通过：`python -m unittest discover -s tests -v`
 - [x] 语法检查通过：`python -m compileall src tests`
 - [x] 依赖安装：PyTorch/TorchVision/TensorBoard/Matplotlib 已安装到 Codex bundled Python。
-- [ ] 完整 CIFAR-10 训练：真实数据集下载在当前环境超时，只下载到部分 `data/cifar-10-python.tar.gz`，未形成可用数据集。
+- [x] 使用老师提供的 GitCode 数据源准备 CIFAR-10：浅克隆数据仓库后用 `tar.exe` 解压，TorchVision 可读取 50,000 张训练图像。
+- [x] 真实 CIFAR-10 quick-dev 训练：`python src/train.py --config configs/default.yaml --quick-dev-run` 已通过。
+- [x] 真实 CIFAR-10 quick-dev 测试：`python src/test.py --config configs/default.yaml --checkpoint checkpoints/best_model.pth --quick-dev-run` 已通过，测试准确率 0.1992，样本数 256。
 - [x] 离线 smoke 训练/测试：`--offline-smoke` 已通过，验证训练、验证、checkpoint、TensorBoard、测试、混淆矩阵和报告链路。
 - [ ] 远程 Git 仓库链接：需要用户提供或创建远程仓库后推送。
 
@@ -38,8 +40,9 @@
 
 ```powershell
 pip install -r requirements.txt
+powershell -ExecutionPolicy Bypass -File scripts/prepare_gitcode_cifar.ps1
 python src/train.py --config configs/default.yaml --quick-dev-run
-python src/test.py --config configs/default.yaml --checkpoint checkpoints/best_model.pth
+python src/test.py --config configs/default.yaml --checkpoint checkpoints/best_model.pth --quick-dev-run
 tensorboard --logdir logs
 ```
 
@@ -54,6 +57,13 @@ python src/test.py --config configs/default.yaml --checkpoint checkpoints/best_m
 
 - `checkpoints/best_model.pth`（本地验证产物，按 `.gitignore` 不提交）
 - `logs/events.out.tfevents.*`（本地验证产物，按 `.gitignore` 不提交）
+- `outputs/history.json`
+- `outputs/test_metrics.json`
+- `outputs/confusion_matrix.png`
+- `outputs/report.md`
+
+真实 CIFAR quick-dev 已生成：
+
 - `outputs/history.json`
 - `outputs/test_metrics.json`
 - `outputs/confusion_matrix.png`

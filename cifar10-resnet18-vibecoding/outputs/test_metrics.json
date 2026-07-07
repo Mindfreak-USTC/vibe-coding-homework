@@ -1,19 +1,19 @@
 {
-  "dataset_name": "TorchVision FakeData (offline smoke)",
-  "test_loss": 2.3109962940216064,
-  "test_accuracy": 0.15625,
+  "dataset_name": "CIFAR-10",
+  "test_loss": 2.2464902997016907,
+  "test_accuracy": 0.19921875,
   "per_class_accuracy": {
-    "airplane": 0.0,
-    "automobile": 0.6,
-    "bird": 0.0,
-    "cat": 0.0,
-    "deer": 0.0,
-    "dog": 0.0,
-    "frog": 0.3333333333333333,
+    "airplane": 0.07692307692307693,
+    "automobile": 0.15,
+    "bird": 0.08333333333333333,
+    "cat": 0.13043478260869565,
+    "deer": 0.4,
+    "dog": 0.07692307692307693,
+    "frog": 0.3448275862068966,
     "horse": 0.0,
-    "ship": 0.0,
-    "truck": 0.0
+    "ship": 0.5882352941176471,
+    "truck": 0.03333333333333333
   },
   "confusion_matrix_path": "C:\\Users\\28751\\Desktop\\ju\\cifar10-resnet18-vibecoding\\outputs\\confusion_matrix.png",
-  "samples": 32
+  "samples": 256
 }

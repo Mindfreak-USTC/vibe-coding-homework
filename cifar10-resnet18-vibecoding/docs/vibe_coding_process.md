@@ -104,15 +104,25 @@ python -m compileall src tests
 当前环境限制：
 
 - 初始环境未安装 `torch`、`torchvision`、`tensorboard` 和 `matplotlib`，已通过 `pip install -r requirements.txt` 安装。
-- 真实 CIFAR-10 下载在当前网络环境中超时，因此新增 `--offline-smoke` 模式，使用 TorchVision FakeData 验证训练、checkpoint、日志、测试和报告链路。
+- 初始真实 CIFAR-10 下载曾超时；随后解析老师给的 GitCode 仓库，发现该仓库的 `cifar-10-python.tar.gz` 实际是 RAR 内容，README 说明需要改成 rar 后解压。
+- 使用 `git clone --depth 1 https://gitcode.com/open-source-toolkit/94ecd.git` 下载数据仓库，并用 Windows `tar.exe` 解压到 `data/`，TorchVision 成功读取 50,000 张训练图片。
+- 保留 `--offline-smoke` 模式作为无网络环境下的工程链路验收方案。
 
 完整验收命令：
 
 ```powershell
 pip install -r requirements.txt
+powershell -ExecutionPolicy Bypass -File scripts/prepare_gitcode_cifar.ps1
 python src/train.py --config configs/default.yaml --quick-dev-run
-python src/test.py --config configs/default.yaml --checkpoint checkpoints/best_model.pth
+python src/test.py --config configs/default.yaml --checkpoint checkpoints/best_model.pth --quick-dev-run
 tensorboard --logdir logs
+```
+
+真实 CIFAR quick-dev 实际结果：
+
+```text
+Epoch 1/1 | train loss 2.4022 acc 0.1602 | val loss 2.2576 acc 0.1471
+Test accuracy: 0.1992
 ```
 
 离线 smoke 验收命令：

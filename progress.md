@@ -32,7 +32,8 @@
 - Actions taken:
   - Added image-quality tests, implementation, README, requirements, process record, sample images, CSV, charts, and report.
   - Added CIFAR tests, config, training/evaluation/test modules, TensorBoard logging, checkpointing, confusion matrix generation, report generation, scripts, README, requirements, and process record.
-  - Added `--offline-smoke` mode after real CIFAR download timed out.
+  - Added `--offline-smoke` mode after official CIFAR download timed out.
+  - Added `scripts/prepare_gitcode_cifar.ps1` after discovering the provided GitCode archive is RAR content with a `.tar.gz` name.
 - Files created/modified:
   - `image-quality-report-vibecoding/`
   - `cifar10-resnet18-vibecoding/`
@@ -45,7 +46,10 @@
   - Ran image-quality CLI on sample images successfully.
   - Visually inspected generated image-quality charts.
   - Installed CIFAR deep-learning dependencies after approval.
-  - Real CIFAR download timed out before training completed.
+  - Official CIFAR download timed out before training completed.
+  - Shallow-cloned the user-provided GitCode CIFAR repo and extracted it with Windows `tar.exe`.
+  - Verified TorchVision can read 50,000 CIFAR-10 training images from `data/`.
+  - Ran true CIFAR quick-dev train/test successfully.
   - Ran CIFAR offline smoke train/test successfully.
   - Visually inspected CIFAR confusion matrix.
   - Created local Git repo and made at least 6 meaningful commits before final packaging commit.
@@ -76,7 +80,9 @@
 | Image-quality CLI | `python -m image_quality.cli --input sample_images --output outputs` | CSV, report, charts | 9 files processed, outputs generated | pass |
 | CIFAR light tests | `python -m unittest discover -s tests -v` | 3 tests pass | 3 tests passed | pass |
 | CIFAR syntax check | `python -m compileall src tests` | No syntax errors | Passed | pass |
-| CIFAR real quick run | `python src/train.py --config configs/default.yaml --quick-dev-run` | Download CIFAR and train one epoch | Timed out during CIFAR download | blocked |
+| GitCode CIFAR preparation | `powershell -ExecutionPolicy Bypass -File scripts/prepare_gitcode_cifar.ps1 -Python <bundled-python>` | Extract dataset and verify loader | CIFAR-10 train images: 50000 | pass |
+| CIFAR real quick train | `python src/train.py --config configs/default.yaml --quick-dev-run` | Train one epoch on small real CIFAR subset | Passed; val acc 0.1471 | pass |
+| CIFAR real quick test | `python src/test.py --config configs/default.yaml --checkpoint checkpoints/best_model.pth --quick-dev-run` | Test on small real CIFAR subset | Passed; test acc 0.1992 on 256 samples | pass |
 | CIFAR offline train smoke | `python src/train.py --config configs/default.yaml --offline-smoke` | One epoch, checkpoint, TensorBoard, history | Passed; best val acc 0.1562 | pass |
 | CIFAR offline test smoke | `python src/test.py --config configs/default.yaml --checkpoint checkpoints/best_model.pth --offline-smoke` | Metrics, report, confusion matrix | Passed; test acc 0.1562 | pass |
 | Git history | `git log --oneline` | At least 5 meaningful commits | 6 commits before final packaging commit | pass |
@@ -89,7 +95,7 @@
 | 2026-07-07 | `pdftoppm` wrapper reported path not found | 1 | Called underlying Poppler `pdftoppm.exe` with absolute paths |
 | 2026-07-07 | `pytest` not installed | 1 | Converted tests to standard-library `unittest` |
 | 2026-07-07 | Test temp dirs under system/AppData paths hit PermissionError | 1 | Moved test work dirs into project-local `test_runs/` |
-| 2026-07-07 | CIFAR real data download timed out | 1 | Added `--offline-smoke` FakeData mode and documented real-data follow-up |
+| 2026-07-07 | Official CIFAR real data download timed out | 1 | Used the provided GitCode data repo and extracted with Windows `tar.exe`; kept FakeData fallback |
 | 2026-07-07 | Matplotlib tried to write AppData cache | 1 | Set project-local `MPLCONFIGDIR` before importing Matplotlib |
 | 2026-07-07 | Git metadata writes were sandbox-blocked | 1 | Used approved escalated Git commands |
 
@@ -99,5 +105,5 @@
 | Where am I? | Phase 5: Final Packaging |
 | Where am I going? | Deliver local artifacts and note external follow-ups |
 | What's the goal? | Complete both homework tasks as managed vibe-coding engineering deliverables |
-| What have I learned? | Image-quality project is fully locally verified; CIFAR engineering pipeline is verified with offline FakeData while real CIFAR download is network-blocked |
-| What have I done? | Built both projects, generated docs/outputs, ran tests/smokes, and created Git commits |
+| What have I learned? | Image-quality project is fully locally verified; CIFAR real-data quick-dev flow works via the provided GitCode repo; only remote push needs a remote URL |
+| What have I done? | Built both projects, generated docs/outputs, ran tests/smokes on real CIFAR and image samples, and created Git commits |

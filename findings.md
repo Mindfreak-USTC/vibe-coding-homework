@@ -20,7 +20,9 @@
 - `Vibe Coding CIFAR-10 Image Classification.pdf` has 9 pages. Text extraction and visual page checks confirm the main requirements, submission list, scoring table, and acceptance criteria.
 - `图像质量检测与自动报告系统.pdf` has 2 pages. Text extraction and visual page checks confirm the functional list, constraints, submission list, and acceptance criteria.
 - PDF-rendered images are stored under `tmp/pdfs/` for inspection.
-- CIFAR real-data quick run timed out while downloading CIFAR-10 in this environment. The project keeps the real CIFAR command unchanged and adds explicit `--offline-smoke` mode for local engineering-chain verification.
+- Initial CIFAR real-data quick run timed out through TorchVision's official download. The provided GitCode repo was then shallow-cloned successfully.
+- The GitCode file named `cifar-10-python.tar.gz` is actually RAR content per its README; Windows `tar.exe` can extract it. After extraction, TorchVision reads 50,000 CIFAR-10 training images.
+- CIFAR real-data quick-dev train/test passed and generated history JSON, test metrics JSON, confusion matrix PNG, and report markdown.
 - CIFAR offline smoke train/test passed and generated checkpoint, TensorBoard event file, history JSON, test metrics JSON, confusion matrix PNG, and report markdown.
 - Image-quality CLI passed on generated sample images and produced CSV, Markdown report, and three charts.
 
@@ -38,7 +40,7 @@
 |-------|------------|
 | Default `python` points to Windows Store alias | Used Codex bundled Python at `C:\Users\28751\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe`. |
 | `pdftoppm` wrapper failed with relative paths | Used the underlying Poppler executable with absolute PDF and output paths. |
-| Real CIFAR download timed out | Added `--offline-smoke` using TorchVision FakeData and documented that real CIFAR metrics require rerunning after data download succeeds. |
+| Official CIFAR download timed out | Used the provided GitCode data repo via shallow clone and extracted the RAR-content archive with Windows `tar.exe`; kept `--offline-smoke` as fallback. |
 | Matplotlib cache attempted to write AppData | Set project-local `MPLCONFIGDIR` before importing Matplotlib. |
 
 ## Resources

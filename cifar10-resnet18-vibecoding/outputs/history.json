@@ -1,13 +1,13 @@
 {
-  "dataset_name": "TorchVision FakeData (offline smoke)",
+  "dataset_name": "CIFAR-10",
   "epochs": [
     {
       "epoch": 1,
-      "train_loss": 2.5187644362449646,
-      "train_accuracy": 0.125,
-      "val_loss": 2.3109962940216064,
-      "val_accuracy": 0.15625
+      "train_loss": 2.4021605849266052,
+      "train_accuracy": 0.16015625,
+      "val_loss": 2.25759220123291,
+      "val_accuracy": 0.14705882352941177
     }
   ],
-  "best_val_accuracy": 0.15625
+  "best_val_accuracy": 0.14705882352941177
 }
