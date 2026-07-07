@@ -41,7 +41,7 @@
 
 ```powershell
 pip install -r requirements.txt
-powershell -ExecutionPolicy Bypass -File scripts/prepare_gitcode_cifar.ps1
+powershell -ExecutionPolicy Bypass -File scripts/prepare_gitcode_cifar.ps1 -Python <python-path>
 python src/train.py --config configs/default.yaml --quick-dev-run
 python src/test.py --config configs/default.yaml --checkpoint checkpoints/best_model.pth --quick-dev-run
 tensorboard --logdir logs
@@ -67,6 +67,7 @@ python src/test.py --config configs/default.yaml --checkpoint checkpoints/best_m
 真实 CIFAR quick-dev 已生成：
 
 - `outputs/history.json`
+- `outputs/training_curves.png`
 - `outputs/test_metrics.json`
 - `outputs/confusion_matrix.png`
 - `outputs/report.md`

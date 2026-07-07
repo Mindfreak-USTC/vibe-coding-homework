@@ -39,7 +39,7 @@
 | 实验报告 | `cifar10-resnet18-vibecoding/outputs/report.md` |
 | vibe coding 过程记录 | `cifar10-resnet18-vibecoding/docs/vibe_coding_process.md` |
 | README 和配置文件 | `README.md`、`configs/default.yaml` |
-| Git 管理 | 本地 Git 仓库包含 9 次以上有意义提交 |
+| Git 管理 | 本地 Git 仓库包含多次有意义提交，精确数量以 `git rev-list --count HEAD` 为准 |
 
 ### 2.2 图像质量任务需求映射
 

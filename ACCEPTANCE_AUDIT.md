@@ -48,7 +48,7 @@
 | 实验报告包含指标、类别准确率、混淆分析和改进方向 | `outputs/report.md` | 已满足 |
 | 记录完整 vibe coding 开发过程 | `docs/vibe_coding_process.md` | 已满足 |
 | 提供 README、requirements、脚本和清晰项目结构 | `README.md`、`requirements.txt`、`scripts/`、`src/` | 已满足 |
-| 使用 Git 管理，有多次有意义提交 | 本地 Git 当前 12 次提交 | 已满足 |
+| 使用 Git 管理，有多次有意义提交 | 本地 Git 历史已包含多次有意义提交，精确数量以 `git rev-list --count HEAD` 为准 | 已满足 |
 | 不提交数据集、虚拟环境、大模型权重文件 | `.gitignore`、`data/README.md`、`checkpoints/README.md`、`logs/README.md` | 已满足 |
 | 最终推送到远程 Git 仓库 | `REMOTE_PUSH_INSTRUCTIONS.md`；当前 `git remote -v` 为空，需要远程仓库 URL | 外部阻塞 |
 
