@@ -11,6 +11,7 @@
 - `task_plan.md`：执行计划和任务拆分。
 - `progress.md`：执行过程记录。
 - `REMOTE_PUSH_INSTRUCTIONS.md`：远程仓库推送说明。
+- `scripts/verify_submission.ps1`：一键本地验收脚本，复验测试、语法检查、bundle 和源码包内容。
 
 ## 2. 两个任务目录
 
@@ -87,3 +88,13 @@ git push -u origin master
 ```
 
 如果暂时无法提供远程仓库，`dist/` 中的源码包和 Git bundle 可以作为离线提交材料。
+
+## 7. 一键本地验收
+
+在根目录运行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/verify_submission.ps1 -Python <python-path>
+```
+
+如果要把“远程仓库必须已配置”也纳入失败条件，追加 `-RequireRemote`。

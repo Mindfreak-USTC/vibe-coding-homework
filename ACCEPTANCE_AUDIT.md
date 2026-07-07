@@ -16,6 +16,7 @@
 | 做需求对齐、规划大纲、分步执行、需求回顾 | `PROJECT_MANAGEMENT_REPORT.md` 第 2-6 节，`SUBMISSION_CHECKLIST.md` | 已满足 |
 | 体现 vibe coding：用自然语言描述需求、反馈错误、迭代完善 | 两个项目的 `docs/vibe_coding_process.md` | 已满足 |
 | 提供老师/助教检查入口 | `TEACHER_HANDOFF.md` | 已满足 |
+| 提供一键本地验收脚本 | `scripts/verify_submission.ps1` | 已满足 |
 | 提供可离线提交的打包产物 | `dist/vibe-coding-homework-source.zip`、`dist/vibe-coding-homework-history.bundle`、`dist/SHA256SUMS.txt` | 已满足 |
 
 ## 2. CIFAR-10 ResNet-18 任务
@@ -103,3 +104,15 @@ python -m compileall src tests
 | 远程 Git 仓库链接 | 当前本地没有 `origin`，且没有可用的已登录 GitHub/GitCode/Gitee CLI | 用户提供空仓库 URL 后执行 `git remote add origin <url>` 和 `git push -u origin master` |
 
 除远程推送外，本地源码、文档、输出、测试和离线交付包已具备当前可验证证据。
+
+## 5. 一键验收命令
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/verify_submission.ps1 -Python <python-path>
+```
+
+该脚本默认把远程仓库缺失视为警告。若要让远程仓库缺失导致失败，使用：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/verify_submission.ps1 -Python <python-path> -RequireRemote
+```
