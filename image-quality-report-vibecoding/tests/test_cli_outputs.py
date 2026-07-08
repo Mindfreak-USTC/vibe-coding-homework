@@ -60,7 +60,24 @@ class CliOutputTests(unittest.TestCase):
             self.assertTrue((output_dir / "report.md").exists())
             self.assertTrue((output_dir / "issue_counts.png").exists())
             self.assertTrue((output_dir / "brightness_distribution.png").exists())
+            self.assertTrue((output_dir / "sharpness_distribution.png").exists())
+            report = (output_dir / "report.md").read_text(encoding="utf-8")
+            self.assertIn("- 模糊:", report)
+            self.assertIn("- 对比度偏低:", report)
+            self.assertIn("问题数量统计图", report)
+            self.assertIn("亮度指标图", report)
+            self.assertIn("清晰度指标图", report)
+            self.assertIn("| normal.png | 正常 |", report)
+            self.assertNotIn("- blurry:", report)
+            self.assertNotIn("- low_contrast:", report)
+            self.assertNotIn("| ok |", report)
             with Image.open(output_dir / "issue_counts.png") as chart:
+                self.assertGreaterEqual(chart.width, 1200)
+                self.assertGreaterEqual(chart.height, 720)
+            with Image.open(output_dir / "brightness_distribution.png") as chart:
+                self.assertGreaterEqual(chart.width, 1200)
+                self.assertGreaterEqual(chart.height, 720)
+            with Image.open(output_dir / "sharpness_distribution.png") as chart:
                 self.assertGreaterEqual(chart.width, 1200)
                 self.assertGreaterEqual(chart.height, 720)
 

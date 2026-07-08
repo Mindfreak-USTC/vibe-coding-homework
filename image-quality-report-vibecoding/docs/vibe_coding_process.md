@@ -152,3 +152,30 @@ OK
 
 python -m compileall src tests
 ```
+
+## 第 7 轮：结果页可读性修正
+
+我的截图反馈提示词：
+
+```text
+这个分布图是什么玩意，根本看不懂啊，怎么就一个柱子。另外预览不显示，另外检测明细（改成质量指标）结论放第三行，数据值放第二行，字体大小间距排版要调整，不要出现一个单元格内换行太丑了。指标要换成中文。
+```
+
+AI 输出摘要：
+
+- 定位预览不显示的原因：中文文件名直接进入 HTTP `Content-Disposition` 响应头会导致预览请求失败。
+- 预览图片 URL 改为百分号编码，响应头改为 ASCII fallback + UTF-8 filename。
+- 删除结果页横向大表格，改成“质量指标”卡片：第一行指标名，第二行数据值，第三行中文结论。
+- 亮度和清晰度图不再做单张图片分布直方图，改为“指标图”，展示数值、结论和参考阈值。
+- Markdown 报告中的状态、问题类型和图表标题改为中文。
+
+验证结果：
+
+```text
+python -m unittest discover -s tests -v
+Ran 9 tests
+OK
+
+python -m compileall src tests
+curl 上传中文文件名图片后，预览图返回 200 image/png
+```

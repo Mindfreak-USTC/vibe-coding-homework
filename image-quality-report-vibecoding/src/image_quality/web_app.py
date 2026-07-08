@@ -10,7 +10,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path, PurePosixPath, PureWindowsPath
 import time
 from typing import Iterable
-from urllib.parse import unquote, urlparse
+from urllib.parse import quote, unquote, urlparse
 
 from .analyzer import AnalysisSummary, analyze_folder
 
@@ -39,8 +39,8 @@ ISSUE_LABELS = {
 }
 CHART_LABELS = {
     "issue_counts.png": "问题数量统计图",
-    "brightness_distribution.png": "亮度分布图",
-    "sharpness_distribution.png": "清晰度分布图",
+    "brightness_distribution.png": "亮度指标图",
+    "sharpness_distribution.png": "清晰度指标图",
 }
 
 
@@ -128,6 +128,26 @@ def _metric_conclusion(metric: str, row: dict[str, object]) -> str:
     return f"{label} · {formatted}"
 
 
+def _metric_parts(metric: str, row: dict[str, object]) -> tuple[str, str, str]:
+    value = _to_float(row.get(metric))
+    if value is None:
+        return "未检测", "未检测", "warn"
+    if metric == "brightness":
+        value_text = f"{value:.1f}"
+        if value < 45:
+            return value_text, "偏暗", "warn"
+        if value > 215:
+            return value_text, "过曝", "warn"
+        return value_text, "亮度正常", "ok"
+    if metric == "contrast":
+        return f"{value:.1f}", ("对比度偏低" if value < 25 else "对比度正常"), ("warn" if value < 25 else "ok")
+    if metric == "sharpness":
+        return f"{value:.1f}", ("偏模糊" if value < 80 else "清晰"), ("warn" if value < 80 else "ok")
+    if metric == "noise":
+        return f"{value:.1f}", ("噪声偏高" if value > 22 else "噪声正常"), ("warn" if value > 22 else "ok")
+    return f"{value:.1f}", "正常", "ok"
+
+
 def _resolution_conclusion(row: dict[str, object]) -> str:
     width = _to_int(row.get("width"))
     height = _to_int(row.get("height"))
@@ -137,8 +157,41 @@ def _resolution_conclusion(row: dict[str, object]) -> str:
     return f"{label} · {width}x{height}"
 
 
+def _resolution_parts(row: dict[str, object]) -> tuple[str, str, str]:
+    width = _to_int(row.get("width"))
+    height = _to_int(row.get("height"))
+    if width is None or height is None:
+        return "未检测", "未检测", "warn"
+    value_text = f"{width}x{height}"
+    if width < 64 or height < 64:
+        return value_text, "分辨率偏低", "warn"
+    return value_text, "高分辨率", "ok"
+
+
+def _metric_card(label: str, value: str, verdict: str, tone: str) -> str:
+    tone_class = "" if tone == "ok" else f" {tone}"
+    return (
+        f'<article class="metric-card{tone_class}">'
+        f"<span>{escape(label)}</span>"
+        f"<strong>{escape(value)}</strong>"
+        f"<em>{escape(verdict)}</em>"
+        "</article>"
+    )
+
+
 def _chart_label(filename: str) -> str:
     return CHART_LABELS.get(filename, filename)
+
+
+def _url_part(value: object) -> str:
+    return quote(str(value), safe="")
+
+
+def _content_disposition(filename: str) -> str:
+    fallback = "".join(char if char.isascii() and char not in '"\\\r\n' else "_" for char in filename)
+    fallback = fallback.strip(" .") or "file"
+    encoded = quote(filename, safe="")
+    return f'inline; filename="{fallback}"; filename*=UTF-8\'\'{encoded}'
 
 
 def _base_page(title: str, body: str) -> str:
@@ -263,33 +316,9 @@ def _base_page(title: str, body: str) -> str:
       line-height: 1;
     }}
     .stat span {{ color: var(--muted); }}
-    table {{
-      width: 100%;
-      min-width: 1380px;
-      border-collapse: collapse;
-      background: white;
-      border: 2px solid var(--line);
-    }}
-    .table-scroll {{
-      width: 100%;
-      overflow-x: auto;
-    }}
-    th, td {{
-      border-bottom: 1px solid #d0d5dd;
-      padding: 20px 18px;
-      text-align: left;
-      vertical-align: top;
-      font-size: 28px;
-      line-height: 1.3;
-    }}
-    th {{ background: #fef3c7; }}
     .status-ok {{ color: var(--good); font-weight: 700; }}
     .status-error {{ color: var(--bad); font-weight: 700; }}
     .status-skipped {{ color: var(--warn); font-weight: 700; }}
-    .metric-verdict {{
-      font-weight: 700;
-      white-space: nowrap;
-    }}
     .preview-grid {{
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -318,6 +347,80 @@ def _base_page(title: str, body: str) -> str:
       line-height: 1.45;
       overflow-wrap: anywhere;
     }}
+    .file-result {{
+      border: 2px solid var(--line);
+      background: #fffdf7;
+      padding: 22px;
+      margin-top: 18px;
+    }}
+    .file-result:first-of-type {{ margin-top: 0; }}
+    .file-meta {{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }}
+    .file-name {{
+      margin: 0;
+      font-size: 26px;
+      line-height: 1.2;
+      font-weight: 800;
+    }}
+    .status-pill {{
+      display: inline-flex;
+      align-items: center;
+      min-height: 42px;
+      padding: 0 16px;
+      border: 2px solid var(--line);
+      background: #dcfce7;
+      color: var(--good);
+      font-size: 22px;
+      font-weight: 800;
+      white-space: nowrap;
+    }}
+    .issue-line {{
+      margin: 0 0 18px;
+      color: var(--ink);
+      font-size: 21px;
+      font-weight: 700;
+      line-height: 1.45;
+    }}
+    .metric-grid {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 14px;
+    }}
+    .metric-card {{
+      border: 2px solid var(--line);
+      background: white;
+      padding: 16px 18px;
+      min-height: 142px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      align-items: center;
+    }}
+    .metric-card span {{
+      color: var(--muted);
+      font-size: 18px;
+      font-weight: 700;
+    }}
+    .metric-card strong {{
+      display: block;
+      font-size: 34px;
+      line-height: 1.1;
+      white-space: nowrap;
+    }}
+    .metric-card em {{
+      color: var(--good);
+      font-size: 20px;
+      font-style: normal;
+      font-weight: 800;
+      white-space: nowrap;
+    }}
+    .metric-card.warn em {{ color: var(--warn); }}
+    .metric-card.bad em {{ color: var(--bad); }}
     .charts {{
       display: grid;
       grid-template-columns: 1fr;
@@ -354,8 +457,7 @@ def _base_page(title: str, body: str) -> str:
     @media (max-width: 780px) {{
       .hero {{ grid-template-columns: 1fr; padding: 22px; }}
       .stats {{ grid-template-columns: repeat(2, 1fr); }}
-      th, td {{ font-size: 22px; }}
-      table {{ min-width: 1100px; }}
+      .metric-grid {{ grid-template-columns: 1fr; }}
     }}
   </style>
 </head>
@@ -395,7 +497,7 @@ def render_upload_page(message: str = "") -> str:
 
 
 def render_results_page(summary: AnalysisSummary, session_id: str) -> str:
-    rows = []
+    metric_sections = []
     preview_cards = []
     for row in summary.rows:
         status = str(row.get("status", ""))
@@ -405,27 +507,36 @@ def render_results_page(summary: AnalysisSummary, session_id: str) -> str:
         if status == "ok":
             preview_cards.append(
                 '<figure class="preview-card">'
-                f'<img src="/preview/{escape(session_id)}/{escape(filename)}" alt="原图预览：{escape(filename)}">'
+                f'<img src="/preview/{_url_part(session_id)}/{_url_part(filename)}" alt="原图预览：{escape(filename)}">'
                 f"<figcaption>{escape(filename)}<br>{escape(status_label)} · {escape(issue_text)}</figcaption>"
                 "</figure>"
             )
-        rows.append(
-            "<tr>"
-            f"<td>{escape(filename)}</td>"
-            f'<td class="status-{escape(status)}">{escape(status_label)}</td>'
-            f'<td class="metric-verdict">{escape(_metric_conclusion("brightness", row))}</td>'
-            f'<td class="metric-verdict">{escape(_metric_conclusion("contrast", row))}</td>'
-            f'<td class="metric-verdict">{escape(_metric_conclusion("sharpness", row))}</td>'
-            f'<td class="metric-verdict">{escape(_metric_conclusion("noise", row))}</td>'
-            f'<td class="metric-verdict">{escape(_resolution_conclusion(row))}</td>'
-            f"<td>{escape(issue_text)}</td>"
-            f"<td>{escape(str(row.get('error', '')))}</td>"
-            "</tr>"
+        metric_cards = []
+        for label, metric in (
+            ("亮度", "brightness"),
+            ("对比度", "contrast"),
+            ("清晰度", "sharpness"),
+            ("噪声", "noise"),
+        ):
+            value_text, verdict, tone = _metric_parts(metric, row)
+            metric_cards.append(_metric_card(label, value_text, verdict, tone))
+        resolution_value, resolution_verdict, resolution_tone = _resolution_parts(row)
+        metric_cards.append(_metric_card("分辨率", resolution_value, resolution_verdict, resolution_tone))
+        status_class = f"status-{escape(status)}"
+        metric_sections.append(
+            '<article class="file-result">'
+            '<div class="file-meta">'
+            f'<h3 class="file-name">{escape(filename)}</h3>'
+            f'<span class="status-pill {status_class}">{escape(status_label)}</span>'
+            "</div>"
+            f'<p class="issue-line">问题：{escape(issue_text)}</p>'
+            f'<div class="metric-grid">{"".join(metric_cards)}</div>'
+            "</article>"
         )
-    table_rows = "\n".join(rows)
+    metric_body = "\n".join(metric_sections)
     previews = "\n".join(preview_cards) or '<p class="hint">本次没有可预览的有效图片。</p>'
     chart_cards = "\n".join(
-        f'<figure class="chart"><img src="/download/{escape(session_id)}/{escape(path.name)}" alt="{escape(_chart_label(path.name))}"><figcaption>{escape(_chart_label(path.name))}</figcaption></figure>'
+        f'<figure class="chart"><img src="/download/{_url_part(session_id)}/{_url_part(path.name)}" alt="{escape(_chart_label(path.name))}"><figcaption>{escape(_chart_label(path.name))}</figcaption></figure>'
         for path in summary.chart_paths
     )
     body = f"""
@@ -456,17 +567,8 @@ def render_results_page(summary: AnalysisSummary, session_id: str) -> str:
     <div class="preview-grid">{previews}</div>
   </div>
   <div class="panel">
-    <h2>检测明细</h2>
-    <div class="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>文件名</th><th>状态</th><th>亮度结论</th><th>对比度结论</th><th>清晰度结论</th><th>噪声结论</th><th>分辨率结论</th><th>问题</th><th>错误</th>
-          </tr>
-        </thead>
-        <tbody>{table_rows}</tbody>
-      </table>
-    </div>
+    <h2>质量指标</h2>
+    {metric_body}
   </div>
   <div class="charts">{chart_cards}</div>
 </section>
@@ -541,7 +643,7 @@ class ImageQualityWebHandler(BaseHTTPRequestHandler):
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(data)))
-        self.send_header("Content-Disposition", f'inline; filename="{path.name}"')
+        self.send_header("Content-Disposition", _content_disposition(path.name))
         self.end_headers()
         self.wfile.write(data)
 

@@ -7,7 +7,7 @@ from typing import Any
 
 from PIL import Image, UnidentifiedImageError
 
-from .charts import issue_counts_from_rows, save_bar_chart, save_histogram
+from .charts import issue_counts_from_rows, save_bar_chart, save_metric_chart
 from .metrics import compute_quality_metrics
 from .report import generate_markdown_report
 
@@ -157,8 +157,23 @@ def analyze_folder(input_dir: Path, output_dir: Path, **thresholds: Any) -> Anal
     brightness_chart = output_dir / "brightness_distribution.png"
     sharpness_chart = output_dir / "sharpness_distribution.png"
     save_bar_chart(issue_counts_from_rows(rows), issue_chart, "问题数量统计图")
-    save_histogram((row["brightness"] for row in valid_rows), brightness_chart, "亮度分布图")
-    save_histogram((row["sharpness"] for row in valid_rows), sharpness_chart, "清晰度分布图")
+    save_metric_chart(
+        valid_rows,
+        brightness_chart,
+        metric="brightness",
+        title="亮度指标图",
+        unit="",
+        normal_min=45.0,
+        normal_max=215.0,
+    )
+    save_metric_chart(
+        valid_rows,
+        sharpness_chart,
+        metric="sharpness",
+        title="清晰度指标图",
+        unit="",
+        good_above=80.0,
+    )
 
     report_path = output_dir / "report.md"
     chart_paths = [issue_chart, brightness_chart, sharpness_chart]

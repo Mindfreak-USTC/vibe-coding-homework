@@ -1,6 +1,7 @@
 from pathlib import Path
 import sys
 import unittest
+from urllib.parse import quote
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
@@ -40,10 +41,14 @@ class WebAppTests(unittest.TestCase):
             error_files=0,
             csv_path=Path("quality_results.csv"),
             report_path=Path("report.md"),
-            chart_paths=[Path("issue_counts.png"), Path("brightness_distribution.png")],
+            chart_paths=[
+                Path("issue_counts.png"),
+                Path("brightness_distribution.png"),
+                Path("sharpness_distribution.png"),
+            ],
             rows=[
                 {
-                    "filename": "样例.png",
+                    "filename": "宏村-白天3.png",
                     "status": "ok",
                     "width": 8256,
                     "height": 5504,
@@ -59,23 +64,27 @@ class WebAppTests(unittest.TestCase):
 
         html = render_results_page(summary, session_id="demo123")
 
-        self.assertIn("样例.png", html)
+        preview_path = f"/preview/demo123/{quote('宏村-白天3.png', safe='')}"
+        self.assertIn("宏村-白天3.png", html)
         self.assertIn("原图预览", html)
-        self.assertIn("/preview/demo123/样例.png", html)
+        self.assertIn(preview_path, html)
         self.assertIn("正常", html)
-        self.assertIn("亮度正常 · 120.5", html)
-        self.assertIn("对比度正常 · 66.2", html)
-        self.assertIn("清晰 · 445.8", html)
-        self.assertIn("噪声正常 · 4.5", html)
-        self.assertIn("高分辨率 · 8256x5504", html)
+        self.assertIn("质量指标", html)
+        self.assertIn("亮度指标图", html)
+        self.assertIn("清晰度指标图", html)
+        self.assertNotIn("亮度分布图", html)
+        self.assertNotIn("清晰度分布图", html)
         self.assertIn("无明显问题", html)
         self.assertNotIn(">ok<", html)
         self.assertIn("/download/demo123/quality_results.csv", html)
         self.assertIn("/download/demo123/report.md", html)
         self.assertIn("/download/demo123/issue_counts.png", html)
-        self.assertIn("<table", html)
-        self.assertIn("font-size: 28px", html)
-        self.assertIn("grid-template-columns: 1fr", html)
+        self.assertNotIn("<table", html)
+        self.assertRegex(html, r"<span>亮度</span>\s*<strong>120\.5</strong>\s*<em>亮度正常</em>")
+        self.assertRegex(html, r"<span>对比度</span>\s*<strong>66\.2</strong>\s*<em>对比度正常</em>")
+        self.assertRegex(html, r"<span>清晰度</span>\s*<strong>445\.8</strong>\s*<em>清晰</em>")
+        self.assertRegex(html, r"<span>噪声</span>\s*<strong>4\.5</strong>\s*<em>噪声正常</em>")
+        self.assertRegex(html, r"<span>分辨率</span>\s*<strong>8256x5504</strong>\s*<em>高分辨率</em>")
 
     def test_results_page_translates_problem_labels(self):
         from image_quality.analyzer import AnalysisSummary
@@ -107,12 +116,21 @@ class WebAppTests(unittest.TestCase):
 
         html = render_results_page(summary, session_id="demo456")
 
-        self.assertIn("偏暗 · 28.2", html)
-        self.assertIn("对比度偏低 · 12.4", html)
-        self.assertIn("偏模糊 · 20.0", html)
-        self.assertIn("噪声偏高 · 28.0", html)
-        self.assertIn("分辨率偏低 · 40x40", html)
+        self.assertRegex(html, r"<span>亮度</span>\s*<strong>28\.2</strong>\s*<em>偏暗</em>")
+        self.assertRegex(html, r"<span>对比度</span>\s*<strong>12\.4</strong>\s*<em>对比度偏低</em>")
+        self.assertRegex(html, r"<span>清晰度</span>\s*<strong>20\.0</strong>\s*<em>偏模糊</em>")
+        self.assertRegex(html, r"<span>噪声</span>\s*<strong>28\.0</strong>\s*<em>噪声偏高</em>")
+        self.assertRegex(html, r"<span>分辨率</span>\s*<strong>40x40</strong>\s*<em>分辨率偏低</em>")
         self.assertIn("过暗；对比度偏低；模糊；噪声偏高；分辨率偏低", html)
+
+    def test_content_disposition_is_safe_for_chinese_filenames(self):
+        from image_quality.web_app import _content_disposition
+
+        header = _content_disposition("宏村-白天3.png")
+
+        header.encode("latin-1")
+        self.assertIn("filename*=UTF-8''", header)
+        self.assertNotIn("宏村", header)
 
 
 if __name__ == "__main__":

@@ -7,30 +7,30 @@
 - 损坏或读取失败文件数: 1
 
 ## 问题类型统计
-- blurry: 6
-- low_contrast: 6
-- high_noise: 1
-- low_resolution: 1
-- overexposed: 1
-- too_dark: 1
+- 模糊: 6
+- 对比度偏低: 6
+- 噪声偏高: 1
+- 分辨率偏低: 1
+- 过曝: 1
+- 过暗: 1
 
 ## 图表
-- ![](issue_counts.png)
-- ![](brightness_distribution.png)
-- ![](sharpness_distribution.png)
+- 问题数量统计图: ![](issue_counts.png)
+- 亮度指标图: ![](brightness_distribution.png)
+- 清晰度指标图: ![](sharpness_distribution.png)
 
 ## 明细预览
 | 文件名 | 状态 | 亮度 | 对比度 | 清晰度 | 噪声 | 分辨率 | 问题 |
 |---|---:|---:|---:|---:|---:|---:|---|
-| blurry.bmp | ok | 127.5 | 0.7822 | 12.5437 | 0.5055 | 128x128 | blurry;low_contrast |
-| corrupt.png | error |  |  |  |  | x |  |
-| high_noise.png | ok | 127.6201 | 29.9882 | 18133.0762 | 28.2787 | 128x128 | high_noise |
-| low_resolution.png | ok | 120.0 | 0.0 | 0.0 | 0.0 | 24x24 | blurry;low_contrast;low_resolution |
-| normal.png | ok | 130.0 | 0.0 | 0.0 | 0.0 | 128x128 | blurry;low_contrast |
-| notes.txt | skipped |  |  |  |  | x |  |
-| overexposed.jpg | ok | 245.0 | 0.0 | 0.0 | 0.0 | 96x96 | overexposed;blurry;low_contrast |
-| too_dark.png | ok | 12.0 | 0.0 | 0.0 | 0.0 | 96x96 | too_dark;blurry;low_contrast |
-| 中文文件名.png | ok | 100.0 | 0.0 | 0.0 | 0.0 | 96x96 | blurry;low_contrast |
+| blurry.bmp | 正常 | 127.5 | 0.8 | 12.5 | 0.5 | 128x128 | 模糊；对比度偏低 |
+| corrupt.png | 错误 |  |  |  |  | x | 无明显问题 |
+| high_noise.png | 正常 | 127.6 | 30.0 | 18133.1 | 28.3 | 128x128 | 噪声偏高 |
+| low_resolution.png | 正常 | 120.0 | 0.0 | 0.0 | 0.0 | 24x24 | 模糊；对比度偏低；分辨率偏低 |
+| normal.png | 正常 | 130.0 | 0.0 | 0.0 | 0.0 | 128x128 | 模糊；对比度偏低 |
+| notes.txt | 跳过 |  |  |  |  | x | 无明显问题 |
+| overexposed.jpg | 正常 | 245.0 | 0.0 | 0.0 | 0.0 | 96x96 | 过曝；模糊；对比度偏低 |
+| too_dark.png | 正常 | 12.0 | 0.0 | 0.0 | 0.0 | 96x96 | 过暗；模糊；对比度偏低 |
+| 中文文件名.png | 正常 | 100.0 | 0.0 | 0.0 | 0.0 | 96x96 | 模糊；对比度偏低 |
 
 ## 结论
 - 过暗、过曝、模糊、低对比度、高噪声和低分辨率由阈值规则自动判断。

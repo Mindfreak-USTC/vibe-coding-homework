@@ -3,6 +3,42 @@ from __future__ import annotations
 from collections import Counter
 from pathlib import Path
 
+ISSUE_LABELS = {
+    "too_dark": "过暗",
+    "overexposed": "过曝",
+    "blurry": "模糊",
+    "low_contrast": "对比度偏低",
+    "high_noise": "噪声偏高",
+    "low_resolution": "分辨率偏低",
+}
+STATUS_LABELS = {
+    "ok": "正常",
+    "skipped": "跳过",
+    "error": "错误",
+}
+CHART_LABELS = {
+    "issue_counts.png": "问题数量统计图",
+    "brightness_distribution.png": "亮度指标图",
+    "sharpness_distribution.png": "清晰度指标图",
+}
+
+
+def _label_issue(issue: object) -> str:
+    return ISSUE_LABELS.get(str(issue), str(issue))
+
+
+def _label_status(status: object) -> str:
+    return STATUS_LABELS.get(str(status), str(status or "未知"))
+
+
+def _format_number(value: object) -> str:
+    try:
+        if value == "":
+            return ""
+        return f"{float(value):.1f}"
+    except (TypeError, ValueError):
+        return str(value)
+
 
 def generate_markdown_report(
     rows: list[dict[str, object]],
@@ -34,13 +70,14 @@ def generate_markdown_report(
     ]
     if issue_counter:
         for issue, count in sorted(issue_counter.items(), key=lambda item: (-item[1], item[0])):
-            lines.append(f"- {issue}: {count}")
+            lines.append(f"- {_label_issue(issue)}: {count}")
     else:
         lines.append("- 未发现质量问题")
 
     lines.extend(["", "## 图表"])
     for chart_path in chart_paths:
-        lines.append(f"- ![]({chart_path.name})")
+        chart_label = CHART_LABELS.get(chart_path.name, chart_path.stem)
+        lines.append(f"- {chart_label}: ![]({chart_path.name})")
 
     lines.extend(
         [
@@ -53,18 +90,19 @@ def generate_markdown_report(
     for row in rows[:30]:
         issues = row.get("issues", [])
         if isinstance(issues, list):
-            issues_text = ";".join(str(issue) for issue in issues)
+            issues_text = "；".join(_label_issue(issue) for issue in issues) or "无明显问题"
         else:
-            issues_text = str(issues)
+            issue_items = [item for item in str(issues).split(";") if item]
+            issues_text = "；".join(_label_issue(issue) for issue in issue_items) or "无明显问题"
         resolution = f"{row.get('width', '')}x{row.get('height', '')}"
         lines.append(
             "| {filename} | {status} | {brightness} | {contrast} | {sharpness} | {noise} | {resolution} | {issues} |".format(
                 filename=row.get("filename", ""),
-                status=row.get("status", ""),
-                brightness=row.get("brightness", ""),
-                contrast=row.get("contrast", ""),
-                sharpness=row.get("sharpness", ""),
-                noise=row.get("noise", ""),
+                status=_label_status(row.get("status", "")),
+                brightness=_format_number(row.get("brightness", "")),
+                contrast=_format_number(row.get("contrast", "")),
+                sharpness=_format_number(row.get("sharpness", "")),
+                noise=_format_number(row.get("noise", "")),
                 resolution=resolution,
                 issues=issues_text,
             )
@@ -79,4 +117,3 @@ def generate_markdown_report(
         ]
     )
     output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-

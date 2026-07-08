@@ -60,8 +60,8 @@ http://127.0.0.1:7860
 - `outputs/quality_results.csv`: 每张图片的检测结果。
 - `outputs/report.md`: 自动生成的 Markdown 报告。
 - `outputs/issue_counts.png`: 问题类型数量统计图。
-- `outputs/brightness_distribution.png`: 亮度分布图。
-- `outputs/sharpness_distribution.png`: 清晰度分布图。
+- `outputs/brightness_distribution.png`: 亮度指标图，显示每张图片的亮度值、结论和参考范围。
+- `outputs/sharpness_distribution.png`: 清晰度指标图，显示每张图片的清晰度值、结论和参考阈值。
 
 ## 测试
 
