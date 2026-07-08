@@ -25,6 +25,13 @@ class ProjectTempDir:
 
 
 class CliOutputTests(unittest.TestCase):
+    def _target_color_ratio(self, image_path: Path, rgb: tuple[int, int, int], tolerance: int = 4) -> float:
+        with Image.open(image_path) as image:
+            pixels = np.asarray(image.convert("RGB"), dtype=np.int16)
+        target = np.array(rgb, dtype=np.int16)
+        matches = np.all(np.abs(pixels - target) <= tolerance, axis=2)
+        return float(matches.sum() / matches.size)
+
     def test_cli_generates_csv_report_and_two_charts(self):
         with ProjectTempDir() as tmp:
             root = Path(tmp)
@@ -80,6 +87,35 @@ class CliOutputTests(unittest.TestCase):
             with Image.open(output_dir / "sharpness_distribution.png") as chart:
                 self.assertGreaterEqual(chart.width, 1200)
                 self.assertGreaterEqual(chart.height, 720)
+
+    def test_single_image_charts_use_markers_instead_of_large_color_blocks(self):
+        from image_quality.charts import save_bar_chart, save_metric_chart
+
+        with ProjectTempDir() as tmp:
+            root = Path(tmp)
+            issue_chart = root / "issue_counts.png"
+            brightness_chart = root / "brightness_distribution.png"
+
+            save_bar_chart({"good": 1}, issue_chart, "问题数量统计图")
+            save_metric_chart(
+                [
+                    {
+                        "filename": "单张图片.png",
+                        "status": "ok",
+                        "brightness": 172.4,
+                    }
+                ],
+                brightness_chart,
+                metric="brightness",
+                metric_label="亮度",
+                title="亮度指标图",
+                unit="",
+                normal_min=45,
+                normal_max=215,
+            )
+
+            self.assertLess(self._target_color_ratio(issue_chart, (76, 120, 168)), 0.04)
+            self.assertLess(self._target_color_ratio(brightness_chart, (15, 118, 110)), 0.04)
 
 
 if __name__ == "__main__":

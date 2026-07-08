@@ -42,6 +42,11 @@ CHART_LABELS = {
     "brightness_distribution.png": "亮度指标图",
     "sharpness_distribution.png": "清晰度指标图",
 }
+CHART_EXPLAINERS = {
+    "issue_counts.png": "横轴为数量，纵轴为问题类型。只有一张图片时，一条标记线表示该状态或问题在本批次出现 1 次。",
+    "brightness_distribution.png": "横轴为亮度值，纵轴为图片文件名。两条绿色参考线表示正常亮度范围 45-215。",
+    "sharpness_distribution.png": "横轴为清晰度相对值，纵轴为图片文件名。绿色参考线表示清晰度阈值 80。",
+}
 
 
 @dataclass
@@ -183,6 +188,10 @@ def _chart_label(filename: str) -> str:
     return CHART_LABELS.get(filename, filename)
 
 
+def _chart_explainer(filename: str) -> str:
+    return CHART_EXPLAINERS.get(filename, "展示本批次图像质量统计结果。")
+
+
 def _url_part(value: object) -> str:
     return quote(str(value), safe="")
 
@@ -236,7 +245,7 @@ def _base_page(title: str, body: str) -> str:
       padding: 34px;
       box-shadow: 10px 10px 0 var(--line);
       display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(280px, .9fr);
+      grid-template-columns: minmax(0, 1fr) minmax(360px, .72fr);
       gap: 28px;
       align-items: stretch;
     }}
@@ -316,6 +325,18 @@ def _base_page(title: str, body: str) -> str:
       line-height: 1;
     }}
     .stat span {{ color: var(--muted); }}
+    .hero-stats {{
+      grid-template-columns: repeat(4, minmax(92px, 1fr));
+      gap: 12px;
+      margin: 24px 0 0;
+      max-width: 760px;
+    }}
+    .hero-stats .stat {{
+      min-height: 88px;
+      padding: 14px 16px;
+    }}
+    .hero-stats .stat strong {{ font-size: 30px; }}
+    .hero-stats .stat span {{ font-size: 15px; }}
     .status-ok {{ color: var(--good); font-weight: 700; }}
     .status-error {{ color: var(--bad); font-weight: 700; }}
     .status-skipped {{ color: var(--warn); font-weight: 700; }}
@@ -324,6 +345,16 @@ def _base_page(title: str, body: str) -> str:
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 18px;
       margin: 24px 0;
+    }}
+    .preview-panel {{
+      border: 2px solid var(--line);
+      background: white;
+      padding: 20px;
+      box-shadow: 6px 6px 0 rgba(20, 20, 20, .18);
+    }}
+    .preview-panel .preview-grid {{
+      grid-template-columns: 1fr;
+      margin: 0;
     }}
     .preview-card {{
       margin: 0;
@@ -421,32 +452,45 @@ def _base_page(title: str, body: str) -> str:
     }}
     .metric-card.warn em {{ color: var(--warn); }}
     .metric-card.bad em {{ color: var(--bad); }}
+    .metric-note {{
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.6;
+      text-align: right;
+    }}
     .charts {{
       display: grid;
-      grid-template-columns: 1fr;
-      gap: 30px;
-      margin-top: 32px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 24px;
     }}
     .chart {{
       margin: 0;
       border: 2px solid var(--line);
       background: white;
-      padding: 22px;
+      padding: 14px;
       box-shadow: 6px 6px 0 rgba(20, 20, 20, .18);
     }}
     .chart img {{
       display: block;
       width: 100%;
       height: auto;
-      max-height: 780px;
+      max-height: 320px;
       object-fit: contain;
       border: 1px solid #cbd5e1;
       background: white;
     }}
     .chart figcaption {{
-      margin-top: 14px;
-      font-size: 28px;
+      margin-top: 12px;
+      font-size: 20px;
       font-weight: 700;
+    }}
+    .chart-explainer {{
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.55;
     }}
     .hint {{
       padding: 12px 14px;
@@ -458,6 +502,7 @@ def _base_page(title: str, body: str) -> str:
       .hero {{ grid-template-columns: 1fr; padding: 22px; }}
       .stats {{ grid-template-columns: repeat(2, 1fr); }}
       .metric-grid {{ grid-template-columns: 1fr; }}
+      .charts {{ grid-template-columns: 1fr; }}
     }}
   </style>
 </head>
@@ -536,7 +581,7 @@ def render_results_page(summary: AnalysisSummary, session_id: str) -> str:
     metric_body = "\n".join(metric_sections)
     previews = "\n".join(preview_cards) or '<p class="hint">本次没有可预览的有效图片。</p>'
     chart_cards = "\n".join(
-        f'<figure class="chart"><img src="/download/{_url_part(session_id)}/{_url_part(path.name)}" alt="{escape(_chart_label(path.name))}"><figcaption>{escape(_chart_label(path.name))}</figcaption></figure>'
+        f'<figure class="chart"><img src="/download/{_url_part(session_id)}/{_url_part(path.name)}" alt="{escape(_chart_label(path.name))}"><figcaption>{escape(_chart_label(path.name))}</figcaption><p class="chart-explainer">{escape(_chart_explainer(path.name))}</p></figure>'
         for path in summary.chart_paths
     )
     body = f"""
@@ -550,25 +595,22 @@ def render_results_page(summary: AnalysisSummary, session_id: str) -> str:
         <a class="button" href="/download/{escape(session_id)}/quality_results.csv">下载 CSV</a>
         <a class="button" href="/download/{escape(session_id)}/report.md">下载报告</a>
       </div>
+      <div class="stats hero-stats">
+        <div class="stat"><strong>{summary.total_files}</strong><span>总文件数</span></div>
+        <div class="stat"><strong>{summary.valid_images}</strong><span>有效图像</span></div>
+        <div class="stat"><strong>{summary.skipped_files}</strong><span>跳过文件</span></div>
+        <div class="stat"><strong>{summary.error_files}</strong><span>损坏/错误</span></div>
+      </div>
     </div>
-    <div class="panel">
-      <h2>本次汇总</h2>
-      <p>结果文件已生成，可直接下载 CSV、Markdown 报告和统计图；继续上传会生成新的检测批次。</p>
-    </div>
-  </div>
-  <div class="stats">
-    <div class="stat"><strong>{summary.total_files}</strong><span>总文件数</span></div>
-    <div class="stat"><strong>{summary.valid_images}</strong><span>有效图像</span></div>
-    <div class="stat"><strong>{summary.skipped_files}</strong><span>跳过文件</span></div>
-    <div class="stat"><strong>{summary.error_files}</strong><span>损坏/错误</span></div>
-  </div>
-  <div class="panel">
-    <h2>原图预览</h2>
-    <div class="preview-grid">{previews}</div>
+    <aside class="preview-panel">
+      <h2>原图预览</h2>
+      <div class="preview-grid">{previews}</div>
+    </aside>
   </div>
   <div class="panel">
     <h2>质量指标</h2>
     {metric_body}
+    <p class="metric-note">数据说明：亮度和对比度来自 0-255 灰度统计；清晰度和噪声是算法相对强度，无物理单位；分辨率单位为像素。</p>
   </div>
   <div class="charts">{chart_cards}</div>
 </section>
