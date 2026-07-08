@@ -87,6 +87,7 @@ python -m compileall src tests
 | 生成至少两类统计图 | `outputs/issue_counts.png`、`outputs/brightness_distribution.png`、`outputs/sharpness_distribution.png` | 已满足 |
 | 自动生成 Markdown 或 HTML 报告 | `outputs/report.md`、`src/image_quality/report.py` | 已满足 |
 | 支持命令行运行 | `src/image_quality/cli.py` | 已满足 |
+| 支持浏览器上传图片并输出结果 | `src/image_quality/web_app.py`、`tests/test_web_app.py` | 已满足 |
 | 提供 README，说明安装、运行、输入输出和示例 | `README.md` | 已满足 |
 | 提供示例输入图片 | `sample_images/` | 已满足 |
 | 能处理中文文件名 | `sample_images/中文文件名.png`、`outputs/quality_results.csv`、`tests/test_quality_metrics.py` | 已满足 |

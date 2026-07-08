@@ -91,6 +91,7 @@ python src/test.py --config configs/default.yaml --checkpoint checkpoints/best_m
 - [x] 可视化图表：`outputs/issue_counts.png`
 - [x] 可视化图表：`outputs/brightness_distribution.png`
 - [x] 可视化图表：`outputs/sharpness_distribution.png`
+- [x] Web 上传演示：`src/image_quality/web_app.py`
 - [x] `docs/vibe_coding_process.md`
 - [x] 测试通过：`python -m unittest discover -s tests -v`
 - [x] 语法检查通过：`python -m compileall src tests`

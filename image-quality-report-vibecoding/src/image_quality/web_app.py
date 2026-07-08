@@ -1,0 +1,457 @@
+from __future__ import annotations
+
+import argparse
+from dataclasses import dataclass
+from email.parser import BytesParser
+from email.policy import default
+from html import escape
+from http import HTTPStatus
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path, PurePosixPath, PureWindowsPath
+import time
+from typing import Iterable
+from urllib.parse import unquote, urlparse
+
+from .analyzer import AnalysisSummary, analyze_folder
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_RUN_ROOT = PROJECT_ROOT / "web_runs"
+DOWNLOADABLE_FILES = {
+    "quality_results.csv",
+    "report.md",
+    "issue_counts.png",
+    "brightness_distribution.png",
+    "sharpness_distribution.png",
+}
+
+
+@dataclass
+class UploadedFile:
+    filename: str
+    content: bytes
+
+
+def safe_upload_name(filename: str, *, fallback: str = "upload.png") -> str:
+    raw = (filename or "").strip()
+    raw = PureWindowsPath(PurePosixPath(raw).name).name
+    if raw in {"", ".", ".."}:
+        raw = fallback
+    safe_chars: list[str] = []
+    for char in raw:
+        if char in '<>:"/\\|?*' or ord(char) < 32:
+            safe_chars.append("_")
+        else:
+            safe_chars.append(char)
+    cleaned = "".join(safe_chars).strip(" .")
+    return cleaned or fallback
+
+
+def _issue_text(issues: object) -> str:
+    if isinstance(issues, list):
+        return ";".join(str(issue) for issue in issues)
+    return str(issues or "")
+
+
+def _format_cell(value: object) -> str:
+    if isinstance(value, float):
+        return f"{value:.4f}"
+    return escape(str(value))
+
+
+def _base_page(title: str, body: str) -> str:
+    return f"""<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{escape(title)}</title>
+  <style>
+    :root {{
+      --ink: #141414;
+      --muted: #667085;
+      --paper: #f7f3ea;
+      --panel: #fffdf7;
+      --line: #1f2937;
+      --accent: #0f766e;
+      --accent-strong: #115e59;
+      --warn: #b45309;
+      --bad: #b91c1c;
+      --good: #166534;
+    }}
+    * {{ box-sizing: border-box; }}
+    body {{
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: Cambria, "Noto Serif SC", "Microsoft YaHei", serif;
+      background:
+        linear-gradient(90deg, rgba(15, 118, 110, .08) 1px, transparent 1px),
+        linear-gradient(rgba(31, 41, 55, .06) 1px, transparent 1px),
+        var(--paper);
+      background-size: 34px 34px;
+    }}
+    main {{
+      width: min(1180px, calc(100vw - 32px));
+      margin: 28px auto 48px;
+    }}
+    .hero {{
+      border: 2px solid var(--line);
+      background: var(--panel);
+      padding: 34px;
+      box-shadow: 10px 10px 0 var(--line);
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(280px, .9fr);
+      gap: 28px;
+      align-items: stretch;
+    }}
+    h1 {{
+      margin: 0 0 14px;
+      font-size: clamp(32px, 5vw, 64px);
+      line-height: 1.02;
+      letter-spacing: 0;
+    }}
+    h2 {{
+      margin: 0 0 16px;
+      font-size: 24px;
+    }}
+    p {{
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.7;
+      margin: 0 0 14px;
+    }}
+    .panel {{
+      border: 2px solid var(--line);
+      background: white;
+      padding: 22px;
+      box-shadow: 6px 6px 0 rgba(20, 20, 20, .18);
+    }}
+    .upload-box {{
+      border: 2px dashed var(--accent);
+      padding: 22px;
+      min-height: 190px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      background: #ecfdf5;
+    }}
+    input[type="file"] {{
+      width: 100%;
+      max-width: 360px;
+      padding: 14px;
+      border: 1px solid #99f6e4;
+      background: white;
+    }}
+    button, .button {{
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 18px;
+      border: 2px solid var(--line);
+      background: var(--accent);
+      color: white;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: 4px 4px 0 var(--line);
+    }}
+    button:hover, .button:hover {{ background: var(--accent-strong); }}
+    .toolbar {{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }}
+    .stats {{
+      display: grid;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      gap: 14px;
+      margin: 24px 0;
+    }}
+    .stat {{
+      border: 2px solid var(--line);
+      background: white;
+      padding: 18px;
+    }}
+    .stat strong {{
+      display: block;
+      font-size: 32px;
+      line-height: 1;
+    }}
+    .stat span {{ color: var(--muted); }}
+    table {{
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border: 2px solid var(--line);
+    }}
+    th, td {{
+      border-bottom: 1px solid #d0d5dd;
+      padding: 12px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 14px;
+    }}
+    th {{ background: #fef3c7; }}
+    .status-ok {{ color: var(--good); font-weight: 700; }}
+    .status-error {{ color: var(--bad); font-weight: 700; }}
+    .status-skipped {{ color: var(--warn); font-weight: 700; }}
+    .charts {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
+      margin-top: 24px;
+    }}
+    .chart img {{
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 2px solid var(--line);
+      background: white;
+    }}
+    .hint {{
+      padding: 12px 14px;
+      background: #fffbeb;
+      border-left: 4px solid #f59e0b;
+      color: #713f12;
+    }}
+    @media (max-width: 780px) {{
+      .hero {{ grid-template-columns: 1fr; padding: 22px; }}
+      .stats {{ grid-template-columns: repeat(2, 1fr); }}
+      table {{ display: block; overflow-x: auto; }}
+    }}
+  </style>
+</head>
+<body>
+  <main>
+    {body}
+  </main>
+</body>
+</html>"""
+
+
+def render_upload_page(message: str = "") -> str:
+    notice = f'<p class="hint">{escape(message)}</p>' if message else ""
+    body = f"""
+<section class="hero">
+  <div>
+    <h1>图像质量检测与自动报告系统</h1>
+    <p>上传 JPG、PNG 或 BMP 图片后，系统会计算亮度、对比度、清晰度、噪声和分辨率，并自动生成 CSV、Markdown 报告和统计图。</p>
+    <p>这个页面复用命令行项目的同一套检测逻辑，适合课堂现场演示真实图片输入。</p>
+    {notice}
+  </div>
+  <form class="panel" action="/analyze" method="post" enctype="multipart/form-data">
+    <h2>上传图片</h2>
+    <div class="upload-box">
+      <div>
+        <input type="file" name="images" accept=".jpg,.jpeg,.png,.bmp,image/jpeg,image/png,image/bmp" multiple required>
+        <p>支持一次选择多张图片。中文文件名会保留，危险路径字符会自动清理。</p>
+      </div>
+    </div>
+    <div class="toolbar">
+      <button type="submit">开始检测</button>
+    </div>
+  </form>
+</section>
+"""
+    return _base_page("图像质量检测与自动报告系统", body)
+
+
+def render_results_page(summary: AnalysisSummary, session_id: str) -> str:
+    rows = []
+    for row in summary.rows:
+        status = str(row.get("status", ""))
+        rows.append(
+            "<tr>"
+            f"<td>{escape(str(row.get('filename', '')))}</td>"
+            f'<td class="status-{escape(status)}">{escape(status)}</td>'
+            f"<td>{_format_cell(row.get('brightness', ''))}</td>"
+            f"<td>{_format_cell(row.get('contrast', ''))}</td>"
+            f"<td>{_format_cell(row.get('sharpness', ''))}</td>"
+            f"<td>{_format_cell(row.get('noise', ''))}</td>"
+            f"<td>{escape(str(row.get('width', '')))}x{escape(str(row.get('height', '')))}</td>"
+            f"<td>{escape(_issue_text(row.get('issues', [])))}</td>"
+            f"<td>{escape(str(row.get('error', '')))}</td>"
+            "</tr>"
+        )
+    table_rows = "\n".join(rows)
+    chart_cards = "\n".join(
+        f'<figure class="chart"><img src="/download/{escape(session_id)}/{escape(path.name)}" alt="{escape(path.name)}"><figcaption>{escape(path.name)}</figcaption></figure>'
+        for path in summary.chart_paths
+    )
+    body = f"""
+<section>
+  <div class="hero">
+    <div>
+      <h1>检测完成</h1>
+      <p>已生成每张图片的质量指标、问题标签、CSV 汇总、Markdown 报告和统计图。</p>
+      <div class="toolbar">
+        <a class="button" href="/">继续上传</a>
+        <a class="button" href="/download/{escape(session_id)}/quality_results.csv">下载 CSV</a>
+        <a class="button" href="/download/{escape(session_id)}/report.md">下载报告</a>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>本次汇总</h2>
+      <p>输出保存在本地 Web 临时目录中，刷新上传即可生成新的检测批次。</p>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat"><strong>{summary.total_files}</strong><span>总文件数</span></div>
+    <div class="stat"><strong>{summary.valid_images}</strong><span>有效图像</span></div>
+    <div class="stat"><strong>{summary.skipped_files}</strong><span>跳过文件</span></div>
+    <div class="stat"><strong>{summary.error_files}</strong><span>损坏/错误</span></div>
+  </div>
+  <div class="panel">
+    <h2>检测明细</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>文件名</th><th>状态</th><th>亮度</th><th>对比度</th><th>清晰度</th><th>噪声</th><th>分辨率</th><th>问题</th><th>错误</th>
+        </tr>
+      </thead>
+      <tbody>{table_rows}</tbody>
+    </table>
+  </div>
+  <div class="charts">{chart_cards}</div>
+</section>
+"""
+    return _base_page("检测结果", body)
+
+
+def parse_uploaded_files(body: bytes, content_type: str) -> list[UploadedFile]:
+    message = BytesParser(policy=default).parsebytes(
+        f"Content-Type: {content_type}\nMIME-Version: 1.0\n\n".encode("utf-8") + body
+    )
+    uploads: list[UploadedFile] = []
+    if not message.is_multipart():
+        return uploads
+    for part in message.iter_parts():
+        filename = part.get_filename()
+        if not filename:
+            continue
+        content = part.get_payload(decode=True) or b""
+        if not content:
+            continue
+        uploads.append(UploadedFile(filename=filename, content=content))
+    return uploads
+
+
+def save_uploads(files: Iterable[UploadedFile], upload_dir: Path) -> int:
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    count = 0
+    used: set[str] = set()
+    for index, upload in enumerate(files, start=1):
+        filename = safe_upload_name(upload.filename, fallback=f"upload_{index}.png")
+        stem = Path(filename).stem
+        suffix = Path(filename).suffix
+        candidate = filename
+        duplicate_index = 2
+        while candidate.lower() in used or (upload_dir / candidate).exists():
+            candidate = f"{stem}_{duplicate_index}{suffix}"
+            duplicate_index += 1
+        used.add(candidate.lower())
+        (upload_dir / candidate).write_bytes(upload.content)
+        count += 1
+    return count
+
+
+class ImageQualityWebHandler(BaseHTTPRequestHandler):
+    server: "ImageQualityHTTPServer"
+
+    def _send_html(self, html: str, status: HTTPStatus = HTTPStatus.OK) -> None:
+        encoded = html.encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(encoded)))
+        self.end_headers()
+        self.wfile.write(encoded)
+
+    def _send_file(self, path: Path) -> None:
+        if not path.exists() or not path.is_file():
+            self.send_error(HTTPStatus.NOT_FOUND)
+            return
+        content_type = "application/octet-stream"
+        if path.suffix.lower() == ".png":
+            content_type = "image/png"
+        elif path.suffix.lower() == ".csv":
+            content_type = "text/csv; charset=utf-8"
+        elif path.suffix.lower() == ".md":
+            content_type = "text/markdown; charset=utf-8"
+        data = path.read_bytes()
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Content-Disposition", f'inline; filename="{path.name}"')
+        self.end_headers()
+        self.wfile.write(data)
+
+    def do_GET(self) -> None:
+        parsed = urlparse(self.path)
+        if parsed.path in {"/", "/index.html"}:
+            self._send_html(render_upload_page())
+            return
+        parts = PurePosixPath(unquote(parsed.path)).parts
+        if len(parts) == 4 and parts[1] == "download":
+            session_id = safe_upload_name(parts[2], fallback="")
+            filename = safe_upload_name(parts[3], fallback="")
+            if filename not in DOWNLOADABLE_FILES:
+                self.send_error(HTTPStatus.NOT_FOUND)
+                return
+            self._send_file(self.server.run_root / session_id / "outputs" / filename)
+            return
+        self.send_error(HTTPStatus.NOT_FOUND)
+
+    def do_POST(self) -> None:
+        parsed = urlparse(self.path)
+        if parsed.path != "/analyze":
+            self.send_error(HTTPStatus.NOT_FOUND)
+            return
+        content_type = self.headers.get("Content-Type", "")
+        try:
+            content_length = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            content_length = 0
+        uploads = parse_uploaded_files(self.rfile.read(content_length), content_type)
+        if not uploads:
+            self._send_html(render_upload_page("没有收到可处理的上传文件。"), HTTPStatus.BAD_REQUEST)
+            return
+        session_id = str(int(time.time() * 1000))
+        session_dir = self.server.run_root / session_id
+        upload_dir = session_dir / "uploads"
+        output_dir = session_dir / "outputs"
+        save_uploads(uploads, upload_dir)
+        summary = analyze_folder(upload_dir, output_dir)
+        self._send_html(render_results_page(summary, session_id))
+
+    def log_message(self, format: str, *args: object) -> None:
+        print(f"[web] {self.address_string()} - {format % args}")
+
+
+class ImageQualityHTTPServer(ThreadingHTTPServer):
+    def __init__(self, server_address: tuple[str, int], run_root: Path):
+        super().__init__(server_address, ImageQualityWebHandler)
+        self.run_root = Path(run_root)
+        self.run_root.mkdir(parents=True, exist_ok=True)
+
+
+def run_server(host: str = "127.0.0.1", port: int = 7860, run_root: Path = DEFAULT_RUN_ROOT) -> None:
+    server = ImageQualityHTTPServer((host, port), run_root)
+    print(f"Image quality web UI: http://{host}:{port}")
+    print("Press Ctrl+C to stop.")
+    server.serve_forever()
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Run the image quality upload web UI.")
+    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--port", default=7860, type=int)
+    parser.add_argument("--run-root", default=DEFAULT_RUN_ROOT, type=Path)
+    args = parser.parse_args(argv)
+    run_server(args.host, args.port, args.run_root)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

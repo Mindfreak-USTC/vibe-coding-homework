@@ -95,3 +95,34 @@ AI 输出摘要：
 - CLI 能生成 CSV、Markdown 报告和三张图表。
 - 支持中文文件名、非图片文件和损坏图片处理。
 
+## 第 5 轮：真实图片上传演示
+
+我的追加提示词：
+
+```text
+能做个前端吗，可以上传图片然后输出结果
+```
+
+AI 输出摘要：
+
+- 新增 `src/image_quality/web_app.py`，使用标准库 HTTP 服务提供本地上传页面。
+- 页面支持上传一张或多张 `jpg`、`png`、`bmp` 图片。
+- 上传后复用已有 `analyze_folder()` 检测逻辑，展示统计卡片、检测明细表、统计图，并提供 CSV 和 Markdown 报告下载。
+- 新增 `tests/test_web_app.py`，覆盖安全文件名、上传表单和结果页下载链接。
+
+验证结果：
+
+```text
+python -m unittest discover -s tests -v
+Ran 7 tests
+OK
+
+python -m compileall src tests
+```
+
+课堂演示命令：
+
+```powershell
+$env:PYTHONPATH="src"
+python -m image_quality.web_app --host 127.0.0.1 --port 7860
+```

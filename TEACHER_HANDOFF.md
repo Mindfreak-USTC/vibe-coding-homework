@@ -55,6 +55,7 @@ python -m compileall src tests
 目录：`image-quality-report-vibecoding/`
 
 - 命令行入口：`src/image_quality/cli.py`
+- Web 上传入口：`src/image_quality/web_app.py`
 - 图像分析：`src/image_quality/analyzer.py`
 - 质量指标：`src/image_quality/metrics.py`
 - Markdown 报告生成：`src/image_quality/report.py`
@@ -73,6 +74,13 @@ $env:PYTHONPATH="src"
 python -m image_quality.cli --input sample_images --output outputs
 python -m unittest discover -s tests -v
 python -m compileall src tests
+```
+
+Web 演示命令：
+
+```powershell
+$env:PYTHONPATH="src"
+python -m image_quality.web_app --host 127.0.0.1 --port 7860
 ```
 
 ## 5. 打包交付物

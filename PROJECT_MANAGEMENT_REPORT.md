@@ -54,6 +54,7 @@
 | 至少两类统计图 | `outputs/issue_counts.png`、`outputs/brightness_distribution.png`、`outputs/sharpness_distribution.png` |
 | Markdown 检测报告 | `outputs/report.md` |
 | 命令行运行 | `src/image_quality/cli.py` |
+| 浏览器上传演示 | `src/image_quality/web_app.py`、`tests/test_web_app.py` |
 | README | `image-quality-report-vibecoding/README.md` |
 | 示例输入图片 | `image-quality-report-vibecoding/sample_images/` |
 | vibe coding 过程记录 | `image-quality-report-vibecoding/docs/vibe_coding_process.md` |
@@ -112,13 +113,15 @@ python -m unittest discover -s tests -v
 python -m compileall src tests
 $env:PYTHONPATH="src"
 python -m image_quality.cli --input sample_images --output outputs
+python -m image_quality.web_app --host 127.0.0.1 --port 7860
 ```
 
 结果：
 
-- 4 个单元测试通过。
+- 7 个单元测试通过。
 - CLI 成功处理 9 个示例文件。
 - 输出 CSV、Markdown 报告和 3 张图表。
+- Web 页面可上传图片并展示检测明细，提供 CSV、报告和统计图下载。
 
 ### 6.2 CIFAR-10 项目
 
@@ -151,15 +154,15 @@ python -m compileall src tests
 
 ## 8. 最终提交说明
 
-当前本地仓库已经准备好提交：
+当前本地仓库已经准备好提交和演示：
 
 - 源码和文档：工作区当前 `master`
 - 源码压缩包：`dist/vibe-coding-homework-source.zip`
 - Git 历史包：`dist/vibe-coding-homework-history.bundle`
+- 远程仓库：`https://github.com/Mindfreak-USTC/vibe-coding-homework.git`
 
-唯一外部缺口是远程仓库 URL。拿到远程 URL 后执行：
+常用远程推送命令：
 
 ```powershell
-git remote add origin <你的远程仓库URL>
 git push -u origin master
 ```

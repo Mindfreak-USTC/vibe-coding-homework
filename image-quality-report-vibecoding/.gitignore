@@ -4,5 +4,5 @@ __pycache__/
 venv/
 .tmp_tests/
 test_runs/
+web_runs/
 .pytest_cache/
-

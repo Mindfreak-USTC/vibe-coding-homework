@@ -13,6 +13,7 @@
 - 生成 `outputs/quality_results.csv`。
 - 生成问题数量统计图、亮度分布图、清晰度分布图。
 - 生成 `outputs/report.md` 自动检测报告。
+- 提供本地 Web 上传页面，可在浏览器中上传图片并查看检测结果。
 
 ## 安装
 
@@ -36,6 +37,23 @@ python -m image_quality.cli --input sample_images --output outputs
 $env:PYTHONPATH="src"
 python -m image_quality.cli --input sample_images --output outputs
 ```
+
+## Web 上传演示
+
+启动本地 Web 前端：
+
+```powershell
+$env:PYTHONPATH="src"
+python -m image_quality.web_app --host 127.0.0.1 --port 7860
+```
+
+打开浏览器访问：
+
+```text
+http://127.0.0.1:7860
+```
+
+页面支持上传 `jpg`、`png`、`bmp` 图片。上传后会展示检测明细、统计卡片、CSV 下载、Markdown 报告下载和统计图。
 
 ## 输出文件
 
@@ -65,7 +83,8 @@ image-quality-report-vibecoding/
 │       ├── charts.py
 │       ├── cli.py
 │       ├── metrics.py
-│       └── report.py
+│       ├── report.py
+│       └── web_app.py
 ├── tests/
 └── docs/
     └── vibe_coding_process.md
@@ -78,4 +97,3 @@ image-quality-report-vibecoding/
 ```powershell
 python -m image_quality.cli --input sample_images --output outputs --dark-threshold 40 --blur-threshold 100
 ```
-

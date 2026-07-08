@@ -81,6 +81,8 @@ $requiredFiles = @(
     "image-quality-report-vibecoding\outputs\quality_results.csv",
     "image-quality-report-vibecoding\outputs\report.md",
     "image-quality-report-vibecoding\outputs\issue_counts.png",
+    "image-quality-report-vibecoding\src\image_quality\web_app.py",
+    "image-quality-report-vibecoding\tests\test_web_app.py",
     "dist\vibe-coding-homework-source.zip",
     "dist\vibe-coding-homework-history.bundle",
     "dist\SHA256SUMS.txt"
@@ -162,7 +164,9 @@ $requiredZipEntries = @(
     "scripts/test_push_remote.ps1",
     "scripts/verify_submission.ps1",
     "cifar10-resnet18-vibecoding/outputs/training_curves.png",
-    "image-quality-report-vibecoding/outputs/quality_results.csv"
+    "image-quality-report-vibecoding/outputs/quality_results.csv",
+    "image-quality-report-vibecoding/src/image_quality/web_app.py",
+    "image-quality-report-vibecoding/tests/test_web_app.py"
 )
 
 foreach ($entry in $requiredZipEntries) {
