@@ -29,6 +29,9 @@ class WebAppTests(unittest.TestCase):
         self.assertIn("jpg", html.lower())
         self.assertIn("png", html.lower())
         self.assertIn("bmp", html.lower())
+        self.assertIn('<body class="upload-page">', html)
+        self.assertIn(".upload-page main {", html)
+        self.assertIn("align-items: center;", html)
 
     def test_results_page_exposes_metrics_downloads_charts_and_preview(self):
         from image_quality.analyzer import AnalysisSummary
@@ -70,6 +73,8 @@ class WebAppTests(unittest.TestCase):
         self.assertIn(preview_path, html)
         self.assertIn("<figcaption>宏村-白天3.png</figcaption>", html)
         self.assertIn("border: 0;", html)
+        self.assertIn("box-shadow: none;", html)
+        self.assertIn("padding: 0;", html)
         self.assertIn("text-align: center;", html)
         self.assertNotIn("<br>正常", html)
         self.assertIn("正常", html)
@@ -82,6 +87,8 @@ class WebAppTests(unittest.TestCase):
         self.assertLess(toolbar_index, stats_index)
         self.assertLess(stats_index, preview_index)
         self.assertIn("质量指标", html)
+        self.assertIn('class="panel metrics-panel"', html)
+        self.assertIn("margin-top: 32px;", html)
         self.assertIn("preview-panel", html)
         self.assertIn("metric-note", html)
         self.assertIn("亮度和对比度来自 0-255 灰度统计", html)

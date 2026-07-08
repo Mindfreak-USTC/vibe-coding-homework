@@ -219,7 +219,8 @@ def _content_disposition(filename: str) -> str:
     return f'inline; filename="{fallback}"; filename*=UTF-8\'\'{encoded}'
 
 
-def _base_page(title: str, body: str) -> str:
+def _base_page(title: str, body: str, *, page_class: str = "") -> str:
+    body_class = f' class="{escape(page_class)}"' if page_class else ""
     return f"""<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -254,6 +255,13 @@ def _base_page(title: str, body: str) -> str:
     main {{
       width: min(1480px, calc(100vw - 32px));
       margin: 28px auto 48px;
+    }}
+    .upload-page main {{
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 32px 0;
+      display: grid;
+      align-items: center;
     }}
     .hero {{
       border: 2px solid var(--line);
@@ -374,10 +382,10 @@ def _base_page(title: str, body: str) -> str:
     }}
     .preview-card {{
       margin: 0;
-      border: 2px solid var(--line);
-      background: white;
-      padding: 14px;
-      box-shadow: 6px 6px 0 rgba(20, 20, 20, .18);
+      border: 0;
+      background: transparent;
+      padding: 0;
+      box-shadow: none;
     }}
     .preview-card img {{
       display: block;
@@ -477,6 +485,9 @@ def _base_page(title: str, body: str) -> str:
     }}
     .metric-card.warn em {{ color: var(--warn); }}
     .metric-card.bad em {{ color: var(--bad); }}
+    .metrics-panel {{
+      margin-top: 32px;
+    }}
     .metric-note {{
       margin: 18px 0 0;
       color: var(--muted);
@@ -531,7 +542,7 @@ def _base_page(title: str, body: str) -> str:
     }}
   </style>
 </head>
-<body>
+<body{body_class}>
   <main>
     {body}
   </main>
@@ -563,7 +574,7 @@ def render_upload_page(message: str = "") -> str:
   </form>
 </section>
 """
-    return _base_page("图像质量检测与自动报告系统", body)
+    return _base_page("图像质量检测与自动报告系统", body, page_class="upload-page")
 
 
 def render_results_page(summary: AnalysisSummary, session_id: str) -> str:
@@ -630,7 +641,7 @@ def render_results_page(summary: AnalysisSummary, session_id: str) -> str:
       <div class="preview-grid">{previews}</div>
     </aside>
   </div>
-  <div class="panel">
+  <div class="panel metrics-panel">
     <h2>质量指标</h2>
     {metric_body}
     <p class="metric-note">数据说明：亮度和对比度来自 0-255 灰度统计；清晰度和噪点是算法相对强度，无物理单位；分辨率单位为像素。</p>
