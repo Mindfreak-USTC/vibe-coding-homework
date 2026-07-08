@@ -156,9 +156,9 @@ def analyze_folder(input_dir: Path, output_dir: Path, **thresholds: Any) -> Anal
     issue_chart = output_dir / "issue_counts.png"
     brightness_chart = output_dir / "brightness_distribution.png"
     sharpness_chart = output_dir / "sharpness_distribution.png"
-    save_bar_chart(issue_counts_from_rows(rows), issue_chart, "Issue counts")
-    save_histogram((row["brightness"] for row in valid_rows), brightness_chart, "Brightness distribution")
-    save_histogram((row["sharpness"] for row in valid_rows), sharpness_chart, "Sharpness distribution")
+    save_bar_chart(issue_counts_from_rows(rows), issue_chart, "问题数量统计图")
+    save_histogram((row["brightness"] for row in valid_rows), brightness_chart, "亮度分布图")
+    save_histogram((row["sharpness"] for row in valid_rows), sharpness_chart, "清晰度分布图")
 
     report_path = output_dir / "report.md"
     chart_paths = [issue_chart, brightness_chart, sharpness_chart]
@@ -174,4 +174,3 @@ def analyze_folder(input_dir: Path, output_dir: Path, **thresholds: Any) -> Anal
         chart_paths=chart_paths,
         rows=rows,
     )
-

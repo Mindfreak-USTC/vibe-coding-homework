@@ -60,6 +60,9 @@ class CliOutputTests(unittest.TestCase):
             self.assertTrue((output_dir / "report.md").exists())
             self.assertTrue((output_dir / "issue_counts.png").exists())
             self.assertTrue((output_dir / "brightness_distribution.png").exists())
+            with Image.open(output_dir / "issue_counts.png") as chart:
+                self.assertGreaterEqual(chart.width, 1200)
+                self.assertGreaterEqual(chart.height, 720)
 
 
 if __name__ == "__main__":

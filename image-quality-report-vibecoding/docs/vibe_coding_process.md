@@ -126,3 +126,29 @@ python -m compileall src tests
 $env:PYTHONPATH="src"
 python -m image_quality.web_app --host 127.0.0.1 --port 7860
 ```
+
+## 第 6 轮：结果页演示优化
+
+我的截图反馈提示词：
+
+```text
+请放大图表、加原图预览、把指标转成中文结论、增大检测明细的字体（起码放大2倍）、把 ok 改成“正常”
+```
+
+AI 输出摘要：
+
+- 结果页新增“原图预览”区，上传后的有效图片可直接在页面确认。
+- 检测明细从原始小数改为中文结论，例如“亮度正常”“偏模糊”“分辨率偏低”。
+- 状态从英文 `ok` 改为中文“正常”。
+- 明细表字体从 14px 放大到 28px，适合投影和课堂演示。
+- 统计图改为单列大图，并把生成图尺寸提升到至少 1200x720，标题改为中文。
+
+验证结果：
+
+```text
+python -m unittest discover -s tests -v
+Ran 8 tests
+OK
+
+python -m compileall src tests
+```

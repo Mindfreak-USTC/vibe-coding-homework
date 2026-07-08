@@ -16,12 +16,31 @@ from .analyzer import AnalysisSummary, analyze_folder
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_RUN_ROOT = PROJECT_ROOT / "web_runs"
+PREVIEW_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp"}
 DOWNLOADABLE_FILES = {
     "quality_results.csv",
     "report.md",
     "issue_counts.png",
     "brightness_distribution.png",
     "sharpness_distribution.png",
+}
+STATUS_LABELS = {
+    "ok": "正常",
+    "skipped": "跳过",
+    "error": "错误",
+}
+ISSUE_LABELS = {
+    "too_dark": "过暗",
+    "overexposed": "过曝",
+    "blurry": "模糊",
+    "low_contrast": "对比度偏低",
+    "high_noise": "噪声偏高",
+    "low_resolution": "分辨率偏低",
+}
+CHART_LABELS = {
+    "issue_counts.png": "问题数量统计图",
+    "brightness_distribution.png": "亮度分布图",
+    "sharpness_distribution.png": "清晰度分布图",
 }
 
 
@@ -47,15 +66,79 @@ def safe_upload_name(filename: str, *, fallback: str = "upload.png") -> str:
 
 
 def _issue_text(issues: object) -> str:
-    if isinstance(issues, list):
-        return ";".join(str(issue) for issue in issues)
-    return str(issues or "")
+    if isinstance(issues, str):
+        issue_items = [issue for issue in issues.split(";") if issue]
+    elif isinstance(issues, list):
+        issue_items = [str(issue) for issue in issues if str(issue)]
+    else:
+        issue_items = []
+    if not issue_items:
+        return "无明显问题"
+    return "；".join(ISSUE_LABELS.get(issue, issue) for issue in issue_items)
 
 
 def _format_cell(value: object) -> str:
     if isinstance(value, float):
-        return f"{value:.4f}"
+        return f"{value:.1f}"
     return escape(str(value))
+
+
+def _status_label(status: object) -> str:
+    return STATUS_LABELS.get(str(status), str(status or "未知"))
+
+
+def _to_float(value: object) -> float | None:
+    try:
+        if value == "":
+            return None
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _to_int(value: object) -> int | None:
+    try:
+        if value == "":
+            return None
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _metric_conclusion(metric: str, row: dict[str, object]) -> str:
+    value = _to_float(row.get(metric))
+    if value is None:
+        return "未检测"
+    formatted = f"{value:.1f}"
+    if metric == "brightness":
+        if value < 45:
+            label = "偏暗"
+        elif value > 215:
+            label = "过曝"
+        else:
+            label = "亮度正常"
+    elif metric == "contrast":
+        label = "对比度偏低" if value < 25 else "对比度正常"
+    elif metric == "sharpness":
+        label = "偏模糊" if value < 80 else "清晰"
+    elif metric == "noise":
+        label = "噪声偏高" if value > 22 else "噪声正常"
+    else:
+        label = "正常"
+    return f"{label} · {formatted}"
+
+
+def _resolution_conclusion(row: dict[str, object]) -> str:
+    width = _to_int(row.get("width"))
+    height = _to_int(row.get("height"))
+    if width is None or height is None:
+        return "未检测"
+    label = "分辨率偏低" if width < 64 or height < 64 else "高分辨率"
+    return f"{label} · {width}x{height}"
+
+
+def _chart_label(filename: str) -> str:
+    return CHART_LABELS.get(filename, filename)
 
 
 def _base_page(title: str, body: str) -> str:
@@ -91,7 +174,7 @@ def _base_page(title: str, body: str) -> str:
       background-size: 34px 34px;
     }}
     main {{
-      width: min(1180px, calc(100vw - 32px));
+      width: min(1480px, calc(100vw - 32px));
       margin: 28px auto 48px;
     }}
     .hero {{
@@ -112,7 +195,7 @@ def _base_page(title: str, body: str) -> str:
     }}
     h2 {{
       margin: 0 0 16px;
-      font-size: 24px;
+      font-size: 32px;
     }}
     p {{
       color: var(--muted);
@@ -182,33 +265,85 @@ def _base_page(title: str, body: str) -> str:
     .stat span {{ color: var(--muted); }}
     table {{
       width: 100%;
+      min-width: 1380px;
       border-collapse: collapse;
       background: white;
       border: 2px solid var(--line);
     }}
+    .table-scroll {{
+      width: 100%;
+      overflow-x: auto;
+    }}
     th, td {{
       border-bottom: 1px solid #d0d5dd;
-      padding: 12px;
+      padding: 20px 18px;
       text-align: left;
       vertical-align: top;
-      font-size: 14px;
+      font-size: 28px;
+      line-height: 1.3;
     }}
     th {{ background: #fef3c7; }}
     .status-ok {{ color: var(--good); font-weight: 700; }}
     .status-error {{ color: var(--bad); font-weight: 700; }}
     .status-skipped {{ color: var(--warn); font-weight: 700; }}
+    .metric-verdict {{
+      font-weight: 700;
+      white-space: nowrap;
+    }}
+    .preview-grid {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px;
+      margin: 24px 0;
+    }}
+    .preview-card {{
+      margin: 0;
+      border: 2px solid var(--line);
+      background: white;
+      padding: 14px;
+      box-shadow: 6px 6px 0 rgba(20, 20, 20, .18);
+    }}
+    .preview-card img {{
+      display: block;
+      width: 100%;
+      height: 260px;
+      object-fit: contain;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+    }}
+    .preview-card figcaption {{
+      margin-top: 12px;
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }}
     .charts {{
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 18px;
-      margin-top: 24px;
+      grid-template-columns: 1fr;
+      gap: 30px;
+      margin-top: 32px;
+    }}
+    .chart {{
+      margin: 0;
+      border: 2px solid var(--line);
+      background: white;
+      padding: 22px;
+      box-shadow: 6px 6px 0 rgba(20, 20, 20, .18);
     }}
     .chart img {{
       display: block;
       width: 100%;
       height: auto;
-      border: 2px solid var(--line);
+      max-height: 780px;
+      object-fit: contain;
+      border: 1px solid #cbd5e1;
       background: white;
+    }}
+    .chart figcaption {{
+      margin-top: 14px;
+      font-size: 28px;
+      font-weight: 700;
     }}
     .hint {{
       padding: 12px 14px;
@@ -219,7 +354,8 @@ def _base_page(title: str, body: str) -> str:
     @media (max-width: 780px) {{
       .hero {{ grid-template-columns: 1fr; padding: 22px; }}
       .stats {{ grid-template-columns: repeat(2, 1fr); }}
-      table {{ display: block; overflow-x: auto; }}
+      th, td {{ font-size: 22px; }}
+      table {{ min-width: 1100px; }}
     }}
   </style>
 </head>
@@ -260,24 +396,36 @@ def render_upload_page(message: str = "") -> str:
 
 def render_results_page(summary: AnalysisSummary, session_id: str) -> str:
     rows = []
+    preview_cards = []
     for row in summary.rows:
         status = str(row.get("status", ""))
+        filename = str(row.get("filename", ""))
+        status_label = _status_label(status)
+        issue_text = _issue_text(row.get("issues", []))
+        if status == "ok":
+            preview_cards.append(
+                '<figure class="preview-card">'
+                f'<img src="/preview/{escape(session_id)}/{escape(filename)}" alt="原图预览：{escape(filename)}">'
+                f"<figcaption>{escape(filename)}<br>{escape(status_label)} · {escape(issue_text)}</figcaption>"
+                "</figure>"
+            )
         rows.append(
             "<tr>"
-            f"<td>{escape(str(row.get('filename', '')))}</td>"
-            f'<td class="status-{escape(status)}">{escape(status)}</td>'
-            f"<td>{_format_cell(row.get('brightness', ''))}</td>"
-            f"<td>{_format_cell(row.get('contrast', ''))}</td>"
-            f"<td>{_format_cell(row.get('sharpness', ''))}</td>"
-            f"<td>{_format_cell(row.get('noise', ''))}</td>"
-            f"<td>{escape(str(row.get('width', '')))}x{escape(str(row.get('height', '')))}</td>"
-            f"<td>{escape(_issue_text(row.get('issues', [])))}</td>"
+            f"<td>{escape(filename)}</td>"
+            f'<td class="status-{escape(status)}">{escape(status_label)}</td>'
+            f'<td class="metric-verdict">{escape(_metric_conclusion("brightness", row))}</td>'
+            f'<td class="metric-verdict">{escape(_metric_conclusion("contrast", row))}</td>'
+            f'<td class="metric-verdict">{escape(_metric_conclusion("sharpness", row))}</td>'
+            f'<td class="metric-verdict">{escape(_metric_conclusion("noise", row))}</td>'
+            f'<td class="metric-verdict">{escape(_resolution_conclusion(row))}</td>'
+            f"<td>{escape(issue_text)}</td>"
             f"<td>{escape(str(row.get('error', '')))}</td>"
             "</tr>"
         )
     table_rows = "\n".join(rows)
+    previews = "\n".join(preview_cards) or '<p class="hint">本次没有可预览的有效图片。</p>'
     chart_cards = "\n".join(
-        f'<figure class="chart"><img src="/download/{escape(session_id)}/{escape(path.name)}" alt="{escape(path.name)}"><figcaption>{escape(path.name)}</figcaption></figure>'
+        f'<figure class="chart"><img src="/download/{escape(session_id)}/{escape(path.name)}" alt="{escape(_chart_label(path.name))}"><figcaption>{escape(_chart_label(path.name))}</figcaption></figure>'
         for path in summary.chart_paths
     )
     body = f"""
@@ -294,7 +442,7 @@ def render_results_page(summary: AnalysisSummary, session_id: str) -> str:
     </div>
     <div class="panel">
       <h2>本次汇总</h2>
-      <p>输出保存在本地 Web 临时目录中，刷新上传即可生成新的检测批次。</p>
+      <p>结果文件已生成，可直接下载 CSV、Markdown 报告和统计图；继续上传会生成新的检测批次。</p>
     </div>
   </div>
   <div class="stats">
@@ -304,15 +452,21 @@ def render_results_page(summary: AnalysisSummary, session_id: str) -> str:
     <div class="stat"><strong>{summary.error_files}</strong><span>损坏/错误</span></div>
   </div>
   <div class="panel">
+    <h2>原图预览</h2>
+    <div class="preview-grid">{previews}</div>
+  </div>
+  <div class="panel">
     <h2>检测明细</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>文件名</th><th>状态</th><th>亮度</th><th>对比度</th><th>清晰度</th><th>噪声</th><th>分辨率</th><th>问题</th><th>错误</th>
-        </tr>
-      </thead>
-      <tbody>{table_rows}</tbody>
-    </table>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>文件名</th><th>状态</th><th>亮度结论</th><th>对比度结论</th><th>清晰度结论</th><th>噪声结论</th><th>分辨率结论</th><th>问题</th><th>错误</th>
+          </tr>
+        </thead>
+        <tbody>{table_rows}</tbody>
+      </table>
+    </div>
   </div>
   <div class="charts">{chart_cards}</div>
 </section>
@@ -375,6 +529,10 @@ class ImageQualityWebHandler(BaseHTTPRequestHandler):
         content_type = "application/octet-stream"
         if path.suffix.lower() == ".png":
             content_type = "image/png"
+        elif path.suffix.lower() in {".jpg", ".jpeg"}:
+            content_type = "image/jpeg"
+        elif path.suffix.lower() == ".bmp":
+            content_type = "image/bmp"
         elif path.suffix.lower() == ".csv":
             content_type = "text/csv; charset=utf-8"
         elif path.suffix.lower() == ".md":
@@ -400,6 +558,14 @@ class ImageQualityWebHandler(BaseHTTPRequestHandler):
                 self.send_error(HTTPStatus.NOT_FOUND)
                 return
             self._send_file(self.server.run_root / session_id / "outputs" / filename)
+            return
+        if len(parts) == 4 and parts[1] == "preview":
+            session_id = safe_upload_name(parts[2], fallback="")
+            filename = safe_upload_name(parts[3], fallback="")
+            if Path(filename).suffix.lower() not in PREVIEW_EXTENSIONS:
+                self.send_error(HTTPStatus.NOT_FOUND)
+                return
+            self._send_file(self.server.run_root / session_id / "uploads" / filename)
             return
         self.send_error(HTTPStatus.NOT_FOUND)
 
