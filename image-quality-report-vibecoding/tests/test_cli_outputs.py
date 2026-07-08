@@ -41,6 +41,13 @@ class CliOutputTests(unittest.TestCase):
 
             Image.fromarray(np.full((96, 96, 3), 130, dtype=np.uint8)).save(input_dir / "normal.png")
             Image.fromarray(np.full((24, 24, 3), 8, dtype=np.uint8)).save(input_dir / "低亮度.png")
+            noisy = np.clip(
+                np.full((128, 128, 3), 120, dtype=np.float32)
+                + np.random.default_rng(7).normal(0, 35, (128, 128, 3)),
+                0,
+                255,
+            ).astype(np.uint8)
+            Image.fromarray(noisy).save(input_dir / "高噪点.png")
 
             command = [
                 sys.executable,
@@ -74,6 +81,9 @@ class CliOutputTests(unittest.TestCase):
             self.assertIn("问题数量统计图", report)
             self.assertIn("亮度指标图", report)
             self.assertIn("清晰度指标图", report)
+            self.assertIn("| 文件名 | 状态 | 亮度 | 对比度 | 清晰度 | 噪点 | 分辨率 | 问题 |", report)
+            self.assertIn("高噪点", report)
+            self.assertNotIn("噪声", report)
             self.assertIn("| normal.png | 正常 |", report)
             self.assertNotIn("- blurry:", report)
             self.assertNotIn("- low_contrast:", report)

@@ -104,7 +104,7 @@ class WebAppTests(unittest.TestCase):
         self.assertRegex(html, r"<span>亮度</span>\s*<strong>120\.5</strong>\s*<em>亮度正常</em>")
         self.assertRegex(html, r"<span>对比度</span>\s*<strong>66\.2</strong>\s*<em>对比度正常</em>")
         self.assertRegex(html, r"<span>清晰度</span>\s*<strong>445\.8</strong>\s*<em>清晰</em>")
-        self.assertRegex(html, r"<span>噪声</span>\s*<strong>4\.5</strong>\s*<em>噪声正常</em>")
+        self.assertRegex(html, r"<span>噪点</span>\s*<strong>4\.5</strong>\s*<em>噪点正常</em>")
         self.assertRegex(html, r"<span>分辨率</span>\s*<strong>8256x5504</strong>\s*<em>高分辨率</em>")
 
     def test_results_page_translates_problem_labels(self):
@@ -138,7 +138,7 @@ class WebAppTests(unittest.TestCase):
         html = render_results_page(summary, session_id="demo456")
 
         self.assertIn('class="status-pill status-warning"', html)
-        self.assertIn(">过暗；对比度偏低；模糊；噪声偏高；分辨率偏低</span>", html)
+        self.assertIn(">过暗；对比度偏低；模糊；噪点偏高；分辨率偏低</span>", html)
         self.assertNotIn('<span class="status-pill status-ok">正常</span>', html)
         self.assertNotIn("<br>正常 ·", html)
         self.assertIn("<figcaption>暗图.png</figcaption>", html)
@@ -147,9 +147,9 @@ class WebAppTests(unittest.TestCase):
         self.assertRegex(html, r"<span>亮度</span>\s*<strong>28\.2</strong>\s*<em>偏暗</em>")
         self.assertRegex(html, r"<span>对比度</span>\s*<strong>12\.4</strong>\s*<em>对比度偏低</em>")
         self.assertRegex(html, r"<span>清晰度</span>\s*<strong>20\.0</strong>\s*<em>偏模糊</em>")
-        self.assertRegex(html, r"<span>噪声</span>\s*<strong>28\.0</strong>\s*<em>噪声偏高</em>")
+        self.assertRegex(html, r"<span>噪点</span>\s*<strong>28\.0</strong>\s*<em>噪点偏高</em>")
         self.assertRegex(html, r"<span>分辨率</span>\s*<strong>40x40</strong>\s*<em>分辨率偏低</em>")
-        self.assertIn("过暗；对比度偏低；模糊；噪声偏高；分辨率偏低", html)
+        self.assertIn("过暗；对比度偏低；模糊；噪点偏高；分辨率偏低", html)
 
     def test_content_disposition_is_safe_for_chinese_filenames(self):
         from image_quality.web_app import _content_disposition

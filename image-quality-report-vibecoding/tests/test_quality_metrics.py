@@ -34,6 +34,23 @@ def checkerboard(size: int = 64) -> np.ndarray:
 
 
 class QualityMetricsTests(unittest.TestCase):
+    def test_default_thresholds_flag_noisy_447px_image_as_problematic(self):
+        from image_quality.analyzer import classify_issues
+
+        issues = classify_issues(
+            {
+                "brightness": 49.9,
+                "contrast": 37.3,
+                "sharpness": 343.8,
+                "noise": 5.2,
+                "width": 447,
+                "height": 447,
+            }
+        )
+
+        self.assertIn("high_noise", issues)
+        self.assertIn("low_resolution", issues)
+
     def test_metrics_detect_dark_low_resolution_and_blur(self):
         from image_quality.analyzer import analyze_image
 

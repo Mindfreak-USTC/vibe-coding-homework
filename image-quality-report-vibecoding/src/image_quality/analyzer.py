@@ -12,6 +12,9 @@ from .metrics import compute_quality_metrics
 from .report import generate_markdown_report
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp"}
+DEFAULT_NOISE_THRESHOLD = 5.0
+DEFAULT_MIN_WIDTH = 512
+DEFAULT_MIN_HEIGHT = 512
 
 
 @dataclass
@@ -33,9 +36,9 @@ def classify_issues(
     bright_threshold: float = 215.0,
     low_contrast_threshold: float = 25.0,
     blur_threshold: float = 80.0,
-    noise_threshold: float = 22.0,
-    min_width: int = 64,
-    min_height: int = 64,
+    noise_threshold: float = DEFAULT_NOISE_THRESHOLD,
+    min_width: int = DEFAULT_MIN_WIDTH,
+    min_height: int = DEFAULT_MIN_HEIGHT,
 ) -> list[str]:
     issues: list[str] = []
     if metrics["brightness"] < dark_threshold:
@@ -46,7 +49,7 @@ def classify_issues(
         issues.append("blurry")
     if metrics["contrast"] < low_contrast_threshold:
         issues.append("low_contrast")
-    if metrics["noise"] > noise_threshold:
+    if metrics["noise"] >= noise_threshold:
         issues.append("high_noise")
     if metrics["width"] < min_width or metrics["height"] < min_height:
         issues.append("low_resolution")

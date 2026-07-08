@@ -3,19 +3,19 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from .analyzer import analyze_folder
+from .analyzer import DEFAULT_MIN_HEIGHT, DEFAULT_MIN_WIDTH, DEFAULT_NOISE_THRESHOLD, analyze_folder
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Analyze image quality and generate CSV, charts, and report.")
     parser.add_argument("--input", required=True, type=Path, help="Folder containing jpg/png/bmp images.")
     parser.add_argument("--output", default=Path("outputs"), type=Path, help="Output folder.")
-    parser.add_argument("--min-width", default=64, type=int, help="Minimum acceptable image width.")
-    parser.add_argument("--min-height", default=64, type=int, help="Minimum acceptable image height.")
+    parser.add_argument("--min-width", default=DEFAULT_MIN_WIDTH, type=int, help="Minimum acceptable image width.")
+    parser.add_argument("--min-height", default=DEFAULT_MIN_HEIGHT, type=int, help="Minimum acceptable image height.")
     parser.add_argument("--dark-threshold", default=45.0, type=float, help="Brightness threshold for too_dark.")
     parser.add_argument("--bright-threshold", default=215.0, type=float, help="Brightness threshold for overexposed.")
     parser.add_argument("--blur-threshold", default=80.0, type=float, help="Sharpness threshold for blurry.")
-    parser.add_argument("--noise-threshold", default=22.0, type=float, help="Noise threshold for high_noise.")
+    parser.add_argument("--noise-threshold", default=DEFAULT_NOISE_THRESHOLD, type=float, help="Noise threshold for high_noise.")
     parser.add_argument("--low-contrast-threshold", default=25.0, type=float, help="Contrast threshold for low_contrast.")
     return parser
 

@@ -1,6 +1,6 @@
 # 图像质量检测与自动报告系统
 
-这是一个基于 vibe coding 完成的 CPU 图像质量检测项目。程序读取指定文件夹中的 `jpg`、`png`、`bmp` 图片，自动计算亮度、对比度、清晰度、噪声和分辨率，并输出 CSV、统计图和 Markdown 报告。
+这是一个基于 vibe coding 完成的 CPU 图像质量检测项目。程序读取指定文件夹中的 `jpg`、`png`、`bmp` 图片，自动计算亮度、对比度、清晰度、噪点和分辨率，并输出 CSV、统计图和 Markdown 报告。
 
 ## 功能
 
@@ -8,8 +8,8 @@
 - 自动跳过非图片文件。
 - 对损坏图片记录错误信息。
 - 支持中文文件名。
-- 计算亮度、对比度、清晰度、噪声、分辨率。
-- 判断过暗、过曝、模糊、对比度不足、噪声较大、分辨率过低。
+- 计算亮度、对比度、清晰度、噪点、分辨率。
+- 判断过暗、过曝、模糊、对比度不足、噪点较大、分辨率过低。
 - 生成 `outputs/quality_results.csv`。
 - 生成问题数量统计图、亮度分布图、清晰度分布图。
 - 生成 `outputs/report.md` 自动检测报告。
@@ -97,3 +97,5 @@ image-quality-report-vibecoding/
 ```powershell
 python -m image_quality.cli --input sample_images --output outputs --dark-threshold 40 --blur-threshold 100
 ```
+
+当前默认值会将噪点指标达到 `5.0` 的图片标记为“噪点偏高”，并将宽或高小于 `512` 像素的图片标记为“分辨率偏低”。

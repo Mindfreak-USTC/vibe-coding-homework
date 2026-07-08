@@ -13,7 +13,7 @@ LABELS = {
     "overexposed": "过曝",
     "blurry": "模糊",
     "low_contrast": "对比度偏低",
-    "high_noise": "噪声偏高",
+    "high_noise": "噪点偏高",
     "low_resolution": "分辨率偏低",
     "skipped": "跳过",
     "error": "错误",

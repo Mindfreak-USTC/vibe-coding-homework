@@ -61,7 +61,7 @@ PermissionError: 默认系统 Temp 目录不可写
 
 AI 输出摘要：
 
-- 生成 `metrics.py`：亮度、对比度、清晰度、噪声、分辨率。
+- 生成 `metrics.py`：亮度、对比度、清晰度、噪点、分辨率。
 - 生成 `analyzer.py`：文件夹遍历、非图片跳过、损坏图片处理、CSV 输出。
 - 生成 `charts.py`：使用 Pillow 绘制统计图。
 - 生成 `report.py`：自动生成 Markdown 报告。
@@ -178,6 +178,30 @@ OK
 
 python -m compileall src tests
 curl 上传中文文件名图片后，预览图返回 200 image/png
+```
+
+## 第 12 轮：真实噪点图片阈值校准
+
+我的截图反馈提示词：
+
+```text
+我输入了这个他还是显示都是正常的，噪点和分辨率的阈值改一改，还有噪声改成噪点
+```
+
+AI 输出摘要：
+
+- 使用真实输入图片复现问题：图片尺寸为 `447x447`，噪点指标约为 `5.2`，旧规则仍判断为正常。
+- 将默认噪点阈值从 `22.0` 调整为 `5.0`，达到阈值即标记为“噪点偏高”。
+- 将默认分辨率阈值从 `64x64` 调整为 `512x512`，任一边小于 512 像素即标记为“分辨率偏低”。
+- Web 页面、Markdown 报告、统计图问题标签和 README 中的“噪声”统一改为“噪点”。
+- 增加回归测试，确保 `noise=5.2` 且 `447x447` 的图片会同时触发“噪点偏高”和“分辨率偏低”。
+
+验证结果：
+
+```text
+python -m unittest image-quality-report-vibecoding.tests.test_quality_metrics.QualityMetricsTests.test_default_thresholds_flag_noisy_447px_image_as_problematic image-quality-report-vibecoding.tests.test_web_app image-quality-report-vibecoding.tests.test_cli_outputs.CliOutputTests.test_cli_generates_csv_report_and_two_charts -v
+Ran 7 tests
+OK
 ```
 
 ## 第 11 轮：原图预览卡片精简

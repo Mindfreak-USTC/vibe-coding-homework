@@ -12,7 +12,13 @@ import time
 from typing import Iterable
 from urllib.parse import quote, unquote, urlparse
 
-from .analyzer import AnalysisSummary, analyze_folder
+from .analyzer import (
+    DEFAULT_MIN_HEIGHT,
+    DEFAULT_MIN_WIDTH,
+    DEFAULT_NOISE_THRESHOLD,
+    AnalysisSummary,
+    analyze_folder,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_RUN_ROOT = PROJECT_ROOT / "web_runs"
@@ -34,7 +40,7 @@ ISSUE_LABELS = {
     "overexposed": "过曝",
     "blurry": "模糊",
     "low_contrast": "对比度偏低",
-    "high_noise": "噪声偏高",
+    "high_noise": "噪点偏高",
     "low_resolution": "分辨率偏低",
 }
 CHART_LABELS = {
@@ -133,7 +139,7 @@ def _metric_conclusion(metric: str, row: dict[str, object]) -> str:
     elif metric == "sharpness":
         label = "偏模糊" if value < 80 else "清晰"
     elif metric == "noise":
-        label = "噪声偏高" if value > 22 else "噪声正常"
+        label = "噪点偏高" if value >= DEFAULT_NOISE_THRESHOLD else "噪点正常"
     else:
         label = "正常"
     return f"{label} · {formatted}"
@@ -155,7 +161,11 @@ def _metric_parts(metric: str, row: dict[str, object]) -> tuple[str, str, str]:
     if metric == "sharpness":
         return f"{value:.1f}", ("偏模糊" if value < 80 else "清晰"), ("warn" if value < 80 else "ok")
     if metric == "noise":
-        return f"{value:.1f}", ("噪声偏高" if value > 22 else "噪声正常"), ("warn" if value > 22 else "ok")
+        return (
+            f"{value:.1f}",
+            ("噪点偏高" if value >= DEFAULT_NOISE_THRESHOLD else "噪点正常"),
+            ("warn" if value >= DEFAULT_NOISE_THRESHOLD else "ok"),
+        )
     return f"{value:.1f}", "正常", "ok"
 
 
@@ -164,7 +174,7 @@ def _resolution_conclusion(row: dict[str, object]) -> str:
     height = _to_int(row.get("height"))
     if width is None or height is None:
         return "未检测"
-    label = "分辨率偏低" if width < 64 or height < 64 else "高分辨率"
+    label = "分辨率偏低" if width < DEFAULT_MIN_WIDTH or height < DEFAULT_MIN_HEIGHT else "高分辨率"
     return f"{label} · {width}x{height}"
 
 
@@ -174,7 +184,7 @@ def _resolution_parts(row: dict[str, object]) -> tuple[str, str, str]:
     if width is None or height is None:
         return "未检测", "未检测", "warn"
     value_text = f"{width}x{height}"
-    if width < 64 or height < 64:
+    if width < DEFAULT_MIN_WIDTH or height < DEFAULT_MIN_HEIGHT:
         return value_text, "分辨率偏低", "warn"
     return value_text, "高分辨率", "ok"
 
@@ -535,7 +545,7 @@ def render_upload_page(message: str = "") -> str:
 <section class="hero">
   <div>
     <h1>图像质量检测与自动报告系统</h1>
-    <p>上传 JPG、PNG 或 BMP 图片后，系统会计算亮度、对比度、清晰度、噪声和分辨率，并自动生成 CSV、Markdown 报告和统计图。</p>
+    <p>上传 JPG、PNG 或 BMP 图片后，系统会计算亮度、对比度、清晰度、噪点和分辨率，并自动生成 CSV、Markdown 报告和统计图。</p>
     <p>这个页面复用命令行项目的同一套检测逻辑，适合课堂现场演示真实图片输入。</p>
     {notice}
   </div>
@@ -576,7 +586,7 @@ def render_results_page(summary: AnalysisSummary, session_id: str) -> str:
             ("亮度", "brightness"),
             ("对比度", "contrast"),
             ("清晰度", "sharpness"),
-            ("噪声", "noise"),
+            ("噪点", "noise"),
         ):
             value_text, verdict, tone = _metric_parts(metric, row)
             metric_cards.append(_metric_card(label, value_text, verdict, tone))
@@ -623,7 +633,7 @@ def render_results_page(summary: AnalysisSummary, session_id: str) -> str:
   <div class="panel">
     <h2>质量指标</h2>
     {metric_body}
-    <p class="metric-note">数据说明：亮度和对比度来自 0-255 灰度统计；清晰度和噪声是算法相对强度，无物理单位；分辨率单位为像素。</p>
+    <p class="metric-note">数据说明：亮度和对比度来自 0-255 灰度统计；清晰度和噪点是算法相对强度，无物理单位；分辨率单位为像素。</p>
   </div>
   <div class="charts">{chart_cards}</div>
 </section>
