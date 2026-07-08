@@ -92,6 +92,12 @@ def _status_label(status: object) -> str:
     return STATUS_LABELS.get(str(status), str(status or "未知"))
 
 
+def _result_badge(status: str, issue_text: str) -> tuple[str, str]:
+    if status == "ok" and issue_text != "无明显问题":
+        return issue_text, "status-warning"
+    return _status_label(status), f"status-{status}"
+
+
 def _to_float(value: object) -> float | None:
     try:
         if value == "":
@@ -326,17 +332,17 @@ def _base_page(title: str, body: str) -> str:
     }}
     .stat span {{ color: var(--muted); }}
     .hero-stats {{
-      grid-template-columns: repeat(4, minmax(92px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(2, minmax(160px, 1fr));
+      gap: 16px;
       margin: 24px 0 0;
-      max-width: 760px;
+      max-width: 560px;
     }}
     .hero-stats .stat {{
-      min-height: 88px;
-      padding: 14px 16px;
+      min-height: 116px;
+      padding: 20px 22px;
     }}
-    .hero-stats .stat strong {{ font-size: 30px; }}
-    .hero-stats .stat span {{ font-size: 15px; }}
+    .hero-stats .stat strong {{ font-size: 44px; }}
+    .hero-stats .stat span {{ font-size: 19px; }}
     .status-ok {{ color: var(--good); font-weight: 700; }}
     .status-error {{ color: var(--bad); font-weight: 700; }}
     .status-skipped {{ color: var(--warn); font-weight: 700; }}
@@ -369,13 +375,14 @@ def _base_page(title: str, body: str) -> str:
       height: 260px;
       object-fit: contain;
       background: #f8fafc;
-      border: 1px solid #cbd5e1;
+      border: 0;
     }}
     .preview-card figcaption {{
       margin-top: 12px;
       font-size: 22px;
       font-weight: 700;
       line-height: 1.45;
+      text-align: center;
       overflow-wrap: anywhere;
     }}
     .file-result {{
@@ -409,14 +416,22 @@ def _base_page(title: str, body: str) -> str:
       color: var(--good);
       font-size: 22px;
       font-weight: 800;
-      white-space: nowrap;
+      text-align: center;
+      white-space: normal;
+      max-width: 64%;
+      line-height: 1.35;
     }}
-    .issue-line {{
-      margin: 0 0 18px;
-      color: var(--ink);
-      font-size: 21px;
-      font-weight: 700;
-      line-height: 1.45;
+    .status-pill.status-warning {{
+      background: #fffbeb;
+      color: var(--warn);
+    }}
+    .status-pill.status-error {{
+      background: #fee2e2;
+      color: var(--bad);
+    }}
+    .status-pill.status-skipped {{
+      background: #fef3c7;
+      color: var(--warn);
     }}
     .metric-grid {{
       display: grid;
@@ -483,14 +498,14 @@ def _base_page(title: str, body: str) -> str:
     }}
     .chart figcaption {{
       margin-top: 12px;
-      font-size: 20px;
+      font-size: 24px;
       font-weight: 700;
     }}
     .chart-explainer {{
-      margin: 8px 0 0;
+      margin: 10px 0 0;
       color: var(--muted);
-      font-size: 15px;
-      line-height: 1.55;
+      font-size: 20px;
+      line-height: 1.6;
     }}
     .hint {{
       padding: 12px 14px;
@@ -547,13 +562,13 @@ def render_results_page(summary: AnalysisSummary, session_id: str) -> str:
     for row in summary.rows:
         status = str(row.get("status", ""))
         filename = str(row.get("filename", ""))
-        status_label = _status_label(status)
         issue_text = _issue_text(row.get("issues", []))
+        badge_text, badge_class = _result_badge(status, issue_text)
         if status == "ok":
             preview_cards.append(
                 '<figure class="preview-card">'
                 f'<img src="/preview/{_url_part(session_id)}/{_url_part(filename)}" alt="原图预览：{escape(filename)}">'
-                f"<figcaption>{escape(filename)}<br>{escape(status_label)} · {escape(issue_text)}</figcaption>"
+                f"<figcaption>{escape(filename)}</figcaption>"
                 "</figure>"
             )
         metric_cards = []
@@ -567,14 +582,12 @@ def render_results_page(summary: AnalysisSummary, session_id: str) -> str:
             metric_cards.append(_metric_card(label, value_text, verdict, tone))
         resolution_value, resolution_verdict, resolution_tone = _resolution_parts(row)
         metric_cards.append(_metric_card("分辨率", resolution_value, resolution_verdict, resolution_tone))
-        status_class = f"status-{escape(status)}"
         metric_sections.append(
             '<article class="file-result">'
             '<div class="file-meta">'
             f'<h3 class="file-name">{escape(filename)}</h3>'
-            f'<span class="status-pill {status_class}">{escape(status_label)}</span>'
+            f'<span class="status-pill {escape(badge_class)}">{escape(badge_text)}</span>'
             "</div>"
-            f'<p class="issue-line">问题：{escape(issue_text)}</p>'
             f'<div class="metric-grid">{"".join(metric_cards)}</div>'
             "</article>"
         )
