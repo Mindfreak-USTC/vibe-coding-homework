@@ -13,7 +13,7 @@
 - 生成 `outputs/quality_results.csv`。
 - 生成问题数量统计图、亮度分布图、清晰度分布图。
 - 生成 `outputs/report.md` 自动检测报告。
-- 提供本地 Web 上传页面，可在浏览器中上传图片并查看检测结果。
+- 提供本地 Web 上传页面，可在浏览器中上传图片、查看检测结果并下载 PDF 报告。
 
 ## 安装
 
@@ -47,18 +47,33 @@ $env:PYTHONPATH="src"
 python -m image_quality.web_app --host 127.0.0.1 --port 7860
 ```
 
+也可以使用仓库根目录的一键启动脚本，它会先检查端口，未运行时自动后台启动：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ..\scripts\Start-ImageQualityWeb.ps1
+```
+
+如需演示时长期保持可访问，可在仓库根目录执行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\Install-ImageQualityWebStartup.ps1
+```
+
+该脚本会写入当前用户的 Windows 启动项，并启动 watchdog，定时检查 `127.0.0.1:7860`，服务退出后会自动恢复。
+
 打开浏览器访问：
 
 ```text
 http://127.0.0.1:7860
 ```
 
-页面支持上传 `jpg`、`png`、`bmp` 图片。上传后会展示检测明细、统计卡片、CSV 下载、Markdown 报告下载和统计图。
+页面支持上传 `jpg`、`png`、`bmp` 图片。上传后会展示原图预览、质量指标、统计卡片、CSV 下载、PDF 报告下载和统计图。
 
 ## 输出文件
 
 - `outputs/quality_results.csv`: 每张图片的检测结果。
 - `outputs/report.md`: 自动生成的 Markdown 报告。
+- Web 上传批次目录中的 `report.pdf`: 页面下载使用的 PDF 报告，包含汇总、原图预览、质量指标和统计图。
 - `outputs/issue_counts.png`: 问题类型数量统计图。
 - `outputs/brightness_distribution.png`: 亮度指标图，显示每张图片的亮度值、结论和参考范围。
 - `outputs/sharpness_distribution.png`: 清晰度指标图，显示每张图片的清晰度值、结论和参考阈值。

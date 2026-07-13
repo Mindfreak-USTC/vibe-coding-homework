@@ -180,6 +180,60 @@ python -m compileall src tests
 curl 上传中文文件名图片后，预览图返回 200 image/png
 ```
 
+## 第 13 轮：PDF 报告下载与首页放大
+
+我的追加反馈提示词：
+
+```text
+点击下载报告并没有下载只是弹出来一些文字。我需要下载下来是规规整整和网页上一样。另外开始界面这个标题居中靠上不要换行，ui大一点
+报告不要html要pdf格式
+```
+
+AI 输出摘要：
+
+- 将 Web 页面“下载报告”从 Markdown 文本链接改为 `report.pdf` 下载链接，并加上浏览器 `download` 属性。
+- 在上传检测完成后额外生成 PDF 报告，PDF 中包含本次汇总、原图预览、质量指标、指标说明和统计图。
+- 下载路由对 CSV、Markdown 和 PDF 使用 `Content-Disposition: attachment`，避免浏览器直接打开文本。
+- 首页上传界面改成更大的居中单列卡片，标题居中靠上并禁止换行。
+- README 同步说明：命令行仍输出 Markdown 报告，Web 演示下载 PDF 报告。
+
+验证结果：
+
+```text
+python -m unittest discover -s tests -v
+Ran 12 tests
+OK
+
+python -m compileall src tests
+OK
+```
+
+## 第 14 轮：Web 演示服务持久化
+
+我的追加反馈提示词：
+
+```text
+永久修复一下
+```
+
+AI 输出摘要：
+
+- 新增 `scripts/Start-ImageQualityWeb.ps1`：检查 `127.0.0.1:7860` 是否已监听，未监听时自动后台启动 Web 服务。
+- 新增 `scripts/Watch-ImageQualityWeb.ps1`：每 30 秒执行一次健康检查，服务退出后自动恢复。
+- 新增 `scripts/Install-ImageQualityWebStartup.ps1`：写入当前用户 Windows 启动项，并立即启动 watchdog。
+- 修复后台隐藏环境中 `PATH` 不完整导致找不到 `netstat` 的问题，改为绝对路径调用系统工具。
+- 修复 PowerShell `$PID` 只读变量冲突，保证 watchdog 日志不再报错。
+
+验证结果：
+
+```text
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\Start-ImageQualityWeb.ps1 -Port 7860
+Image quality web UI is already running: http://127.0.0.1:7860/ PID=110368
+
+手动停止旧服务 PID 后，watchdog 自动恢复新 PID=62040
+curl http://127.0.0.1:7860/ 返回首页正常
+```
+
 ## 第 11 轮：结果页分区与上传页居中
 
 我的追加反馈提示词：

@@ -1,10 +1,25 @@
 from pathlib import Path
 import sys
 import unittest
+import uuid
 from urllib.parse import quote
+
+from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
+TMP_ROOT = ROOT / "test_runs"
+TMP_ROOT.mkdir(exist_ok=True)
+
+
+class ProjectTempDir:
+    def __enter__(self):
+        self.path = TMP_ROOT / f"web_{uuid.uuid4().hex}"
+        self.path.mkdir(parents=True, exist_ok=False)
+        return str(self.path)
+
+    def __exit__(self, exc_type, exc, traceback):
+        return False
 
 
 class WebAppTests(unittest.TestCase):
@@ -31,7 +46,11 @@ class WebAppTests(unittest.TestCase):
         self.assertIn("bmp", html.lower())
         self.assertIn('<body class="upload-page">', html)
         self.assertIn(".upload-page main {", html)
-        self.assertIn("align-items: center;", html)
+        self.assertIn('class="hero upload-hero"', html)
+        self.assertIn(".upload-hero h1 {", html)
+        self.assertIn("text-align: center;", html)
+        self.assertIn("white-space: nowrap;", html)
+        self.assertIn("min-height: 240px;", html)
 
     def test_results_page_exposes_metrics_downloads_charts_and_preview(self):
         from image_quality.analyzer import AnalysisSummary
@@ -105,7 +124,9 @@ class WebAppTests(unittest.TestCase):
         self.assertNotIn("问题：", html)
         self.assertNotIn(">ok<", html)
         self.assertIn("/download/demo123/quality_results.csv", html)
-        self.assertIn("/download/demo123/report.md", html)
+        self.assertIn('/download/demo123/report.pdf" download', html)
+        self.assertNotIn('/download/demo123/report.md">下载报告', html)
+        self.assertNotIn('/download/demo123/report.html', html)
         self.assertIn("/download/demo123/issue_counts.png", html)
         self.assertNotIn("<table", html)
         self.assertRegex(html, r"<span>亮度</span>\s*<strong>120\.5</strong>\s*<em>亮度正常</em>")
@@ -166,6 +187,53 @@ class WebAppTests(unittest.TestCase):
         header.encode("latin-1")
         self.assertIn("filename*=UTF-8''", header)
         self.assertNotIn("宏村", header)
+
+    def test_downloadable_report_is_pdf_attachment(self):
+        from image_quality.analyzer import AnalysisSummary
+        from image_quality.web_app import DOWNLOADABLE_FILES, _content_disposition, write_downloadable_pdf_report
+
+        with ProjectTempDir() as tmp:
+            root = Path(tmp)
+            upload_dir = root / "uploads"
+            output_dir = root / "outputs"
+            upload_dir.mkdir()
+            output_dir.mkdir()
+            Image.new("RGB", (12, 12), (120, 160, 200)).save(upload_dir / "样图.png")
+            Image.new("RGB", (12, 12), (255, 255, 255)).save(output_dir / "issue_counts.png")
+
+            summary = AnalysisSummary(
+                total_files=1,
+                valid_images=1,
+                skipped_files=0,
+                error_files=0,
+                csv_path=output_dir / "quality_results.csv",
+                report_path=output_dir / "report.md",
+                chart_paths=[output_dir / "issue_counts.png"],
+                rows=[
+                    {
+                        "filename": "样图.png",
+                        "status": "ok",
+                        "width": 1200,
+                        "height": 900,
+                        "brightness": 120.0,
+                        "contrast": 40.0,
+                        "sharpness": 180.0,
+                        "noise": 2.0,
+                        "issues": [],
+                        "error": "",
+                    }
+                ],
+            )
+
+            report_path = write_downloadable_pdf_report(summary, upload_dir, output_dir)
+            report_bytes = report_path.read_bytes()
+
+        self.assertIn("report.pdf", DOWNLOADABLE_FILES)
+        self.assertNotIn("report.html", DOWNLOADABLE_FILES)
+        self.assertTrue(report_path.name.endswith(".pdf"))
+        self.assertGreater(len(report_bytes), 2000)
+        self.assertTrue(report_bytes.startswith(b"%PDF"))
+        self.assertTrue(_content_disposition("检测报告.pdf", disposition="attachment").startswith("attachment;"))
 
 
 if __name__ == "__main__":

@@ -26,10 +26,12 @@ PREVIEW_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp"}
 DOWNLOADABLE_FILES = {
     "quality_results.csv",
     "report.md",
+    "report.pdf",
     "issue_counts.png",
     "brightness_distribution.png",
     "sharpness_distribution.png",
 }
+ATTACHMENT_DOWNLOADS = {"quality_results.csv", "report.md", "report.pdf"}
 STATUS_LABELS = {
     "ok": "正常",
     "skipped": "跳过",
@@ -212,11 +214,261 @@ def _url_part(value: object) -> str:
     return quote(str(value), safe="")
 
 
-def _content_disposition(filename: str) -> str:
+def _content_disposition(filename: str, *, disposition: str = "inline") -> str:
+    safe_disposition = "attachment" if disposition == "attachment" else "inline"
     fallback = "".join(char if char.isascii() and char not in '"\\\r\n' else "_" for char in filename)
     fallback = fallback.strip(" .") or "file"
     encoded = quote(filename, safe="")
-    return f'inline; filename="{fallback}"; filename*=UTF-8\'\'{encoded}'
+    return f'{safe_disposition}; filename="{fallback}"; filename*=UTF-8\'\'{encoded}'
+
+
+def _pdf_font(size: int, *, bold: bool = False):
+    from PIL import ImageFont
+
+    candidates = [
+        Path("C:/Windows/Fonts/msyh.ttc"),
+        Path("C:/Windows/Fonts/msyhbd.ttc"),
+        Path("C:/Windows/Fonts/simhei.ttf"),
+        Path("C:/Windows/Fonts/simsun.ttc"),
+        Path("C:/Windows/Fonts/simsunb.ttf"),
+        Path("C:/Windows/Fonts/simkai.ttf"),
+        Path("/System/Library/Fonts/PingFang.ttc"),
+        Path("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"),
+        Path("/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc"),
+        Path("/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc"),
+        Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
+    ]
+    if not bold:
+        candidates = [Path("C:/Windows/Fonts/simsun.ttc"), Path("C:/Windows/Fonts/msyh.ttc"), *candidates]
+    for path in candidates:
+        if path.exists():
+            return ImageFont.truetype(str(path), size)
+    return ImageFont.load_default()
+
+
+def _text_size(draw: object, text: str, font: object) -> tuple[int, int]:
+    bbox = draw.textbbox((0, 0), text, font=font)
+    return bbox[2] - bbox[0], bbox[3] - bbox[1]
+
+
+def _wrap_text(draw: object, text: str, font: object, max_width: int, *, max_lines: int | None = None) -> list[str]:
+    lines: list[str] = []
+    current = ""
+    for char in text:
+        if char == "\n":
+            lines.append(current)
+            current = ""
+            continue
+        candidate = current + char
+        if not current or _text_size(draw, candidate, font)[0] <= max_width:
+            current = candidate
+        else:
+            lines.append(current)
+            current = char
+        if max_lines and len(lines) >= max_lines:
+            break
+    if current and (not max_lines or len(lines) < max_lines):
+        lines.append(current)
+    if max_lines and len(lines) > max_lines:
+        return lines[:max_lines]
+    return lines
+
+
+def _draw_wrapped_text(
+    draw: object,
+    text: str,
+    xy: tuple[int, int],
+    font: object,
+    fill: tuple[int, int, int],
+    max_width: int,
+    *,
+    line_gap: int = 8,
+    max_lines: int | None = None,
+) -> int:
+    x, y = xy
+    line_height = _text_size(draw, "国", font)[1] + line_gap
+    for line in _wrap_text(draw, text, font, max_width, max_lines=max_lines):
+        draw.text((x, y), line, font=font, fill=fill)
+        y += line_height
+    return y
+
+
+def _paste_fitted_image(page: object, path: Path, box: tuple[int, int, int, int]) -> None:
+    from PIL import Image, ImageOps
+
+    left, top, right, bottom = box
+    max_width = max(1, right - left)
+    max_height = max(1, bottom - top)
+    with Image.open(path) as image:
+        fitted = ImageOps.exif_transpose(image).convert("RGB")
+        fitted.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
+        x = left + (max_width - fitted.width) // 2
+        y = top + (max_height - fitted.height) // 2
+        page.paste(fitted, (x, y))
+
+
+def write_downloadable_pdf_report(summary: AnalysisSummary, upload_dir: Path, output_dir: Path) -> Path:
+    from PIL import Image, ImageDraw
+
+    page_width, page_height = 1240, 1754
+    margin = 70
+    line = (31, 41, 55)
+    paper = (247, 243, 234)
+    panel = (255, 253, 247)
+    white = (255, 255, 255)
+    muted = (102, 112, 133)
+    accent = (15, 118, 110)
+    good = (22, 101, 52)
+    warn = (180, 83, 9)
+    bad = (185, 28, 28)
+
+    title_font = _pdf_font(54, bold=True)
+    h2_font = _pdf_font(34, bold=True)
+    h3_font = _pdf_font(25, bold=True)
+    body_font = _pdf_font(20)
+    small_font = _pdf_font(17)
+    number_font = _pdf_font(34, bold=True)
+
+    pages: list[Image.Image] = []
+
+    def new_page() -> tuple[Image.Image, ImageDraw.ImageDraw, int]:
+        page = Image.new("RGB", (page_width, page_height), paper)
+        draw = ImageDraw.Draw(page)
+        for x in range(0, page_width, 34):
+            draw.line((x, 0, x, page_height), fill=(230, 226, 216), width=1)
+        for y_grid in range(0, page_height, 34):
+            draw.line((0, y_grid, page_width, y_grid), fill=(230, 226, 216), width=1)
+        pages.append(page)
+        return page, draw, margin
+
+    page, draw, y = new_page()
+
+    def ensure_space(required_height: int) -> None:
+        nonlocal page, draw, y
+        if y + required_height > page_height - margin:
+            page, draw, y = new_page()
+
+    def card(x: int, top: int, width: int, height: int, *, fill: tuple[int, int, int] = white) -> None:
+        draw.rectangle((x + 8, top + 8, x + width + 8, top + height + 8), fill=(205, 201, 191))
+        draw.rectangle((x, top, x + width, top + height), fill=fill, outline=line, width=3)
+
+    content_width = page_width - margin * 2
+    draw.text((margin, y), "图像质量检测报告", font=title_font, fill=(20, 20, 20))
+    y += 76
+    y = _draw_wrapped_text(
+        draw,
+        "本报告由网页上传检测生成，包含原图预览、质量指标、问题结论、CSV 对应统计和图表。",
+        (margin, y),
+        body_font,
+        muted,
+        content_width,
+    )
+    y += 18
+
+    stat_items = [
+        ("总文件数", str(summary.total_files)),
+        ("有效图像", str(summary.valid_images)),
+        ("跳过文件", str(summary.skipped_files)),
+        ("损坏/错误", str(summary.error_files)),
+    ]
+    stat_gap = 16
+    stat_width = (content_width - stat_gap * 3) // 4
+    stat_height = 118
+    for index, (label, value) in enumerate(stat_items):
+        x = margin + index * (stat_width + stat_gap)
+        card(x, y, stat_width, stat_height)
+        draw.text((x + 22, y + 18), value, font=number_font, fill=(0, 0, 0))
+        draw.text((x + 22, y + 70), label, font=body_font, fill=muted)
+    y += stat_height + 34
+
+    valid_rows = [row for row in summary.rows if row.get("status") == "ok"]
+    if valid_rows:
+        first = valid_rows[0]
+        filename = str(first.get("filename", ""))
+        image_path = upload_dir / filename
+        if image_path.exists():
+            preview_height = 520
+            ensure_space(preview_height)
+            card(margin, y, content_width, preview_height, fill=white)
+            draw.text((margin + 24, y + 22), "原图预览", font=h2_font, fill=(0, 0, 0))
+            image_box = (margin + 34, y + 84, margin + content_width - 34, y + 410)
+            draw.rectangle(image_box, fill=(248, 250, 252), outline=(203, 213, 225), width=2)
+            _paste_fitted_image(page, image_path, image_box)
+            name_width = _text_size(draw, filename, h3_font)[0]
+            draw.text((margin + (content_width - name_width) // 2, y + 430), filename, font=h3_font, fill=(0, 0, 0))
+            y += preview_height + 36
+
+    ensure_space(250)
+    draw.text((margin, y), "质量指标", font=h2_font, fill=(0, 0, 0))
+    y += 52
+    for row in summary.rows:
+        filename = str(row.get("filename", ""))
+        status = str(row.get("status", ""))
+        issue_text = _issue_text(row.get("issues", []))
+        badge_text, _badge_class = _result_badge(status, issue_text)
+        metrics = []
+        for label, metric in (("亮度", "brightness"), ("对比度", "contrast"), ("清晰度", "sharpness"), ("噪点", "noise")):
+            value, verdict, tone = _metric_parts(metric, row)
+            metrics.append((label, value, verdict, tone))
+        value, verdict, tone = _resolution_parts(row)
+        metrics.append(("分辨率", value, verdict, tone))
+
+        row_height = 238
+        ensure_space(row_height + 24)
+        card(margin, y, content_width, row_height, fill=panel)
+        draw.text((margin + 22, y + 22), filename, font=h3_font, fill=(0, 0, 0))
+        badge_color = warn if badge_text != "正常" else good
+        badge_width = min(410, max(120, _text_size(draw, badge_text, body_font)[0] + 44))
+        badge_x = margin + content_width - badge_width - 22
+        draw.rectangle((badge_x, y + 20, badge_x + badge_width, y + 62), fill=(220, 252, 231), outline=line, width=2)
+        draw.text((badge_x + 18, y + 29), badge_text, font=body_font, fill=badge_color)
+
+        metric_gap = 14
+        metric_width = (content_width - 44 - metric_gap * 4) // 5
+        metric_y = y + 88
+        for index, (label, value_text, verdict_text, tone_name) in enumerate(metrics):
+            x = margin + 22 + index * (metric_width + metric_gap)
+            draw.rectangle((x, metric_y, x + metric_width, metric_y + 112), fill=white, outline=line, width=2)
+            draw.text((x + 14, metric_y + 14), label, font=small_font, fill=muted)
+            draw.text((x + 14, metric_y + 40), value_text, font=h3_font, fill=(0, 0, 0))
+            verdict_color = warn if tone_name == "warn" else bad if tone_name == "bad" else good
+            draw.text((x + 14, metric_y + 78), verdict_text, font=small_font, fill=verdict_color)
+        y += row_height + 26
+
+    note = "数据说明：亮度和对比度来自 0-255 灰度统计；清晰度和噪点是算法相对强度，无物理单位；分辨率单位为像素。"
+    ensure_space(78)
+    y = _draw_wrapped_text(draw, note, (margin, y), small_font, muted, content_width)
+    y += 28
+
+    if summary.chart_paths:
+        ensure_space(90)
+        draw.text((margin, y), "统计图", font=h2_font, fill=(0, 0, 0))
+        y += 54
+        for chart_path in summary.chart_paths:
+            chart_height = 470
+            ensure_space(chart_height + 34)
+            card(margin, y, content_width, chart_height, fill=white)
+            draw.text((margin + 22, y + 18), _chart_label(chart_path.name), font=h3_font, fill=(0, 0, 0))
+            image_box = (margin + 28, y + 64, margin + content_width - 28, y + 350)
+            draw.rectangle(image_box, fill=white, outline=(203, 213, 225), width=2)
+            if Path(chart_path).exists():
+                _paste_fitted_image(page, Path(chart_path), image_box)
+            _draw_wrapped_text(
+                draw,
+                _chart_explainer(chart_path.name),
+                (margin + 24, y + 366),
+                body_font,
+                muted,
+                content_width - 48,
+                max_lines=3,
+            )
+            y += chart_height + 30
+
+    report_path = output_dir / "report.pdf"
+    if not pages:
+        page, draw, y = new_page()
+    pages[0].save(report_path, "PDF", resolution=150.0, save_all=True, append_images=pages[1:])
+    return report_path
 
 
 def _base_page(title: str, body: str, *, page_class: str = "") -> str:
@@ -259,9 +511,9 @@ def _base_page(title: str, body: str, *, page_class: str = "") -> str:
     .upload-page main {{
       min-height: 100vh;
       margin: 0 auto;
-      padding: 32px 0;
+      padding: 48px 0 56px;
       display: grid;
-      align-items: center;
+      align-items: start;
     }}
     .hero {{
       border: 2px solid var(--line);
@@ -272,6 +524,50 @@ def _base_page(title: str, body: str, *, page_class: str = "") -> str:
       grid-template-columns: minmax(0, 1fr) minmax(360px, .72fr);
       gap: 28px;
       align-items: stretch;
+    }}
+    .upload-hero {{
+      width: min(1120px, 100%);
+      margin: 0 auto;
+      grid-template-columns: 1fr;
+      gap: 26px;
+      text-align: center;
+      padding: 44px;
+    }}
+    .upload-hero h1 {{
+      margin-bottom: 18px;
+      font-size: clamp(40px, 5vw, 74px);
+      white-space: nowrap;
+    }}
+    .upload-hero p {{
+      max-width: 860px;
+      margin-left: auto;
+      margin-right: auto;
+      font-size: 20px;
+    }}
+    .upload-hero .panel {{
+      width: min(760px, 100%);
+      margin: 0 auto;
+      padding: 34px;
+      text-align: left;
+    }}
+    .upload-hero .panel h2 {{
+      text-align: center;
+      font-size: 38px;
+    }}
+    .upload-hero .upload-box {{
+      min-height: 240px;
+    }}
+    .upload-hero input[type="file"] {{
+      max-width: 560px;
+      font-size: 18px;
+    }}
+    .upload-hero .toolbar {{
+      justify-content: center;
+    }}
+    .upload-hero button {{
+      min-height: 56px;
+      padding: 0 34px;
+      font-size: 21px;
     }}
     h1 {{
       margin: 0 0 14px;
@@ -553,10 +849,10 @@ def _base_page(title: str, body: str, *, page_class: str = "") -> str:
 def render_upload_page(message: str = "") -> str:
     notice = f'<p class="hint">{escape(message)}</p>' if message else ""
     body = f"""
-<section class="hero">
+<section class="hero upload-hero">
   <div>
     <h1>图像质量检测与自动报告系统</h1>
-    <p>上传 JPG、PNG 或 BMP 图片后，系统会计算亮度、对比度、清晰度、噪点和分辨率，并自动生成 CSV、Markdown 报告和统计图。</p>
+    <p>上传 JPG、PNG 或 BMP 图片后，系统会计算亮度、对比度、清晰度、噪点和分辨率，并自动生成 CSV、PDF 报告和统计图。</p>
     <p>这个页面复用命令行项目的同一套检测逻辑，适合课堂现场演示真实图片输入。</p>
     {notice}
   </div>
@@ -623,11 +919,11 @@ def render_results_page(summary: AnalysisSummary, session_id: str) -> str:
   <div class="hero">
     <div>
       <h1>检测完成</h1>
-      <p>已生成每张图片的质量指标、问题标签、CSV 汇总、Markdown 报告和统计图。</p>
+      <p>已生成每张图片的质量指标、问题标签、CSV 汇总、PDF 报告和统计图。</p>
       <div class="toolbar">
         <a class="button" href="/">继续上传</a>
         <a class="button" href="/download/{escape(session_id)}/quality_results.csv">下载 CSV</a>
-        <a class="button" href="/download/{escape(session_id)}/report.md">下载报告</a>
+        <a class="button" href="/download/{escape(session_id)}/report.pdf" download>下载报告</a>
       </div>
       <div class="stats hero-stats">
         <div class="stat"><strong>{summary.total_files}</strong><span>总文件数</span></div>
@@ -715,11 +1011,14 @@ class ImageQualityWebHandler(BaseHTTPRequestHandler):
             content_type = "text/csv; charset=utf-8"
         elif path.suffix.lower() == ".md":
             content_type = "text/markdown; charset=utf-8"
+        elif path.suffix.lower() == ".pdf":
+            content_type = "application/pdf"
         data = path.read_bytes()
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(data)))
-        self.send_header("Content-Disposition", _content_disposition(path.name))
+        disposition = "attachment" if path.name in ATTACHMENT_DOWNLOADS else "inline"
+        self.send_header("Content-Disposition", _content_disposition(path.name, disposition=disposition))
         self.end_headers()
         self.wfile.write(data)
 
@@ -767,6 +1066,7 @@ class ImageQualityWebHandler(BaseHTTPRequestHandler):
         output_dir = session_dir / "outputs"
         save_uploads(uploads, upload_dir)
         summary = analyze_folder(upload_dir, output_dir)
+        write_downloadable_pdf_report(summary, upload_dir, output_dir)
         self._send_html(render_results_page(summary, session_id))
 
     def log_message(self, format: str, *args: object) -> None:
